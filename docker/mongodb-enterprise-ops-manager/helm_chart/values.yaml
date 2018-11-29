@@ -1,0 +1,8 @@
+namespace: mongodb
+registry:
+  repository: quay.io/mongodb
+  pullPolicy: Always
+  imagePullSecrets:
+opsManager:
+  name: mongodb-enterprise-ops-manager
+  version: 4.0.0.49984.20180625T1427Z-1
