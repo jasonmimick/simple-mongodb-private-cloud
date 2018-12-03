@@ -1,0 +1,189 @@
+#!/usr/bin/env python
+
+"""
+kubectl-mongodb
+
+A kubectl plugin which implements various utilies
+to provision, configure, and manage MongoDB deployments
+in a Kubernetes cluster and MongoDB Cloud Manager
+
+
+Usage: {filename} <subcommand> <arg1 arg2 arg3...>
+
+Available subcommands:
+
+- config <username:apikey>
+  Stores MongoDB Clous Manager user name and apikey into
+  the plugin configuration file: ./.kubectl.mongodb
+- projects <list|create>
+- operator <config|>
+- shell <service name>
+  Connects to and starts a mongo shell session with a target
+  service name.
+"""
+import sys, os
+import datetime
+import argparse
+import requests
+import json
+import copy
+from requests.auth import HTTPDigestAuth
+import time
+from kubernetes import client, config
+from kubernetes.stream import stream
+
+KUBECTL_MONGODB_CONF = "./.kubectl-mongodb"
+class KubectlMongoDB(object):
+
+  def shell(self):
+    #print("shell command")
+    desc="""Start a Mongo shell. Call with eval, like\n 
+
+$eval $(kubectl mongodb shell --service my-replica-set-svc)
+"""
+    args = self.__get_args(desc, [ '--service', '--namespace', '--srv'])
+    # find first pod, run kubectl exec to mongo shell but pass internal mongodb+srv 
+    if not args.namespace:
+      namespace = 'mongodb'
+    else:
+      namespace = args.namespace 
+    # look up the app label on this service
+    #kubectl get service args.service -o=jsonpath='{.metadata.labels.app}'    
+    config.load_kube_config()
+    api = client.CoreV1Api()
+    response = api.read_namespaced_service(args.service, namespace)
+    if not (response.metadata):
+      print("No service named '%s' found" % (args.service))
+      raise SystemExit()
+    # service is 'owned' by mdb deployment, lookup name
+    #print(response)
+    owner_type = response.metadata.owner_references[0].kind
+    if owner_type == 'MongoDbReplicaSet':
+      replica_set_name = response.metadata.owner_references[0].name
+
+    #print("app=%s" % response.metadata.labels['app'])
+    label_selector = 'app=%s' % response.metadata.labels['app']
+    response = api.list_namespaced_pod(namespace, label_selector=label_selector)
+    pod_name = ''
+    # TODO: discover the full path to mongo shell binary
+    mongo = "/var/lib/mongodb-mms-automation/mongodb-linux-x86_64-4.0.0/bin/mongo"
+    if not len(response.items) > 0:
+      print("No pods for service '%s' with label '%s' found" % (args.service, label_selector))
+      raise SystemExit()
+    else:
+      # Run the mongo shell from the first pod in the deployment
+      pod_name = response.items[0].metadata.name
+
+      if args.srv:
+         connection_string = "mongodb+srv://%s/test?ssl=false" % (args.service)
+      else:
+         hosts = ','.join( [ item.metadata.name for item in response.items ])
+         connection_string = "mongodb://%s/test?ssl=false" % (hosts)
+    if owner_type == 'MongoDbReplicaSet':
+      connection_string = '%s&replicaSet=%s' % (connection_string, replica_set_name)
+    #print("pod_name=%s" % pod_name)
+
+    cmd = "kubectl exec -it %s -- %s \"%s\"" % (pod_name, mongo, connection_string)
+    print('%s' % cmd)
+    #if args.i:
+    #  self.__i_shell(api,pod_name, mongo, connection_string)
+
+  def __i_shell(self,api,pod_name, mongo, connection_string):
+    resp = stream(api.connect_get_namespaced_pod_exec, pod_name, 'default',
+              command='%s "%s"' % (mongo, connection_string),
+              stderr=True, stdin=True,
+              stdout=True, tty=False,
+              _preload_content=False)
+    while resp.is_open():
+      resp.update(timeout=1)
+      if resp.peek_stdout():
+        print("STDOUT: %s" % resp.read_stdout())
+      if resp.peek_stderr():
+        print("STDERR: %s" % resp.read_stderr())
+      if commands:
+        c = commands.pop(0)
+        print("Running command... %s\n" % c)
+        resp.write_stdin(c + "\n")
+      else:
+        break
+
+  def operator(self):
+    # read the .kubectl-mongodb
+    args = self.__get_args('operator commands', [ 'command', '--project', '--user', '--publicApiKey' ] )
+    
+    config_map="""---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: cloud-mgr-{project}-project
+data:
+  projectName: {project}
+  baseUrl: https://cloud.mongodb.com"""
+    if args.user: 
+      user="user: %s" % args.user
+      publicApiKey="publicApiKey: %s" % args.publicApiKey
+    else:   
+      if not os.path.exists(KUBECTL_MONGODB_CONF):
+        print("kubectl-mongodb is not configured, please run 'kubectl mongodb config -h'")
+        raise SystemExit()
+      with open(KUBECTL_MONGODB_CONF, 'rw') as f:
+        user=f.readline()
+        publicApiKey=f.readline()
+
+    secret="""---
+apiVersion: v1
+kind: Secret
+metadata:
+  name: cloud-mgr-{project}-authn
+type: Opaque
+stringData:
+  {user}
+  {publicApiKey}"""
+
+    print( config_map.format(project=args.project) )
+    print( secret.format(project=args.project, user=user, publicApiKey=publicApiKey) )
+    
+  def config(self):
+
+    print("configcommand")
+    args = self.__get_args('Configure user & publicApiKey', [ 'command', '--user', '--publicApiKey']) 
+    print 'user=%s, publicApiKey=%s' % (args.user, args.publicApiKey)
+    with open(KUBECTL_MONGODB_CONF, 'rw') as f:
+      if args.command == 'set':
+        f.write("user: %s" % args.user)
+        f.write("publicApiKey: %s" % args.publicApiKey)
+      if args.command == 'get':
+        print f.read()
+      
+
+  def help(self):
+    print("help")
+
+  def __get_args(self, description, args):
+    parser = argparse.ArgumentParser(
+            description=description)
+    # prefixing the argument with -- means it's optional
+    for arg in args:
+      parser.add_argument(arg)
+    # now that we're inside a subcommand, ignore the first
+    # TWO argvs, ie the command (git) and the subcommand (commit)
+    args = parser.parse_args(sys.argv[2:])
+    return args
+
+  # "main"
+  def __init__(self):
+    parser = argparse.ArgumentParser(description="kubectl-mongodb - a kubectl plugin")
+    parser.add_argument('command', help='Subcommand to run')
+    # parse_args defaults to [1:] for args, but you need to
+    # exclude the rest of the args too, or validation will fail
+    args = parser.parse_args(sys.argv[1:2])
+    if not hasattr(self, args.command):
+      print 'Unrecognized command'
+      parser.print_help()
+      exit(1)
+    # use dispatch pattern to invoke method with same name
+    getattr(self, args.command)()
+
+
+if __name__ == '__main__':
+    KubectlMongoDB()

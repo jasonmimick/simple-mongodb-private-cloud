@@ -59,10 +59,12 @@ if [ ! -z "${OM_HOST}" ] &&  [ -z "${SKIP_OPS_MANAGER_REGISTRATION}" ]; then
     # like a PersistentVolume, or this file won't be found
     OM_ENV_FILE="/opt/mongodb/mms/env/.ops-manager-env"
     echo "[$(date -u +'%Y-%m-%dT%H:%M:%SZ')]: Credentials to be stored in ${OM_ENV_FILE}"
+    echo "OM_HOST=${OM_HOST}"
     /opt/scripts/configure-ops-manager.py "http://${OM_HOST}:${OM_PORT}" "${OM_ENV_FILE}" || true
     # keep going if a user has registered already, we'll assume it is us.
 fi
 echo "[$(date -u +'%Y-%m-%dT%H:%M:%SZ')]: Ops Manager ready..."
 
 # Tail all Ops Manager and MongoD log files
-tail -F "${log_dir}/mms0.log" "${log_dir}/mms0-startup.log" "${log_dir}/daemon.log" "${log_dir}/daemon-startup.log" "${log_dir}/mongod-appdb.log" "${log_dir}/mongod-backup.log"
+#tail -F "${log_dir}/mms0.log" "${log_dir}/mms0-startup.log" "${log_dir}/daemon.log" "${log_dir}/daemon-startup.log" "${log_dir}/mongod-appdb.log" "${log_dir}/mongod-backup.log"
+tail -f "${log_dir}/*.log" "/opt/mongodb/mms/logs/*.log"

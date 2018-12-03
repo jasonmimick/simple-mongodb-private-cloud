@@ -27,6 +27,7 @@ DEFAULT_ADMIN='admin'
 DEFAULT_PASS='admin12345%'
 
 def post(om_url, data, username=None, token=None):
+    print("post() om_url=%s",om_url)
     data = bytes(json.dumps(data), encoding='utf-8')
     req = request.Request(om_url, data)
     req.add_header('Content-Type', 'application/json')
@@ -53,7 +54,8 @@ if __name__ == '__main__':
 
     # Internal Ops Manager hostname used by automation agents
     om_host = 'export OM_HOST={}'.format(url)
-
+    print()
+    print("om_host=%s",om_host)
     # If the env vars have already been configured (global admin was registered)
     if exists(filename):
         print()

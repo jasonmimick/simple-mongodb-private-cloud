@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 
 """This small server will download the MMS and MongoDB packages needed
 to build the Ops Manager Docker Image. It needs to be called from the

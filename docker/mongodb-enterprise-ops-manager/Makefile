@@ -1,13 +1,16 @@
-IMAGE = mongodb-enterprise-ops-manager
-IMAGE_VERSION = 4.0.5.50245.20181031T0042Z-1
-IMAGE_REVISION = _test
-CONTAINER = ops_manager
+#IMAGE = mongodb-enterprise-ops-manager
+IMAGE = jmimick/mongodb-enterprise-ops-manager
+OPS_MANAGER_VERSION = 4.0.5.50245.20181031T0042Z-1
+#IMAGE_VERSION = 4.0.5.50245.20181031T0042Z-1
+IMAGE_VERSION = latest
+#IMAGE_REVISION = _test
 MONGODB_VERSION = 4.0.0
 AWS_IMAGE_HOST = 268558157000.dkr.ecr.us-east-1.amazonaws.com
 AWS_IMAGE_REPO = dev
 AWS_REGION = us-east-1
 OM_DOWNLOAD_LOCATION = https://downloads.mongodb.com/on-prem-mms/deb
 MDB_DOWNLOAD_LOCATION = https://fastdl.mongodb.org/linux
+CONTAINER="ops-manager"
 
 usage:
 	@ echo "MongoDB Enterprise Ops Manager - Docker image builder"
@@ -42,7 +45,7 @@ clean: delete_container
 
 cache_server:
 	@ echo "Running the cache server. Keep this terminal open"
-	@ MONGODB_VERSION=$(MONGODB_VERSION) IMAGE_VERSION=$(IMAGE_VERSION) scripts/cache_server.py
+	@ MONGODB_VERSION=$(MONGODB_VERSION) IMAGE_VERSION=$(OPS_MANAGER_VERSION) scripts/cache_server.py
 
 build_cached:
 	@ echo "Building using cached MMS and Mongodb"
@@ -53,7 +56,7 @@ build:
 	docker build $(EXTRA_PARAM) --add-host="localhost:$(DOCKER_HOST_IP)" \
 		-t $(IMAGE):$(IMAGE_VERSION)$(IMAGE_REVISION) \
 		--build-arg MONGODB_VERSION=$(MONGODB_VERSION) \
-		--build-arg OPS_MANAGER_VERSION=$(IMAGE_VERSION) \
+		--build-arg OPS_MANAGER_VERSION=$(OPS_MANAGER_VERSION) \
 		--build-arg OM_DOWNLOAD_LOCATION=$(OM_DOWNLOAD_LOCATION) \
 		--build-arg MDB_DOWNLOAD_LOCATION=$(MDB_DOWNLOAD_LOCATION) \
 		.
@@ -78,7 +81,7 @@ push: build aws_login
 
 run:
 	$(eval OM_HOST := $(shell scripts/get-local-ip.sh))
-	@ echo "Running container with Ops Manager pointing to: $(OM_HOST)"
+	@ echo "Running container with Ops Manager pointing to: $(OM_HOST) CONTAINER=$(CONTAINER)"
 	docker run --name $(CONTAINER) -p 8080:8080 -e SKIP_OPS_MANAGER_REGISTRATION -e OM_HOST='$(OM_HOST)' -t $(IMAGE):$(IMAGE_VERSION)$(IMAGE_REVISION)
 
 start:

@@ -123,10 +123,12 @@ start() {
     local jvm_opts=$( build_opts "${JAVA_MMS_UI_OPTS}" opts_array[@] )
     local idx="0"
     local log_file_base="${LOG_PATH}/${APP_ID}${idx}"
+    echo "log_file_base=${log_file_base}"
     local startup_log_file_base="${LOG_PATH}/${APP_ID}${idx}-startup"
     local pid_file="${APP_DIR}/tmp/${APP_ID}-${idx}.pid"
     local jvm_opts_instance="${jvm_opts} -Dlog_path=${log_file_base} -Dinstance-id=${idx} -Dpid-filename=${pid_file}"
     local start_cmd="${JAVA_HOME}/bin/${APP_NAME} ${jvm_opts_instance} com.xgen.svc.core.ServerMain"
+    echo "start_cmd=${start_cmd}"
     local pid=$( mms_pid $idx )
     local running=$( is_mms_running $pid )
 
