@@ -9,6 +9,8 @@ Clone and run `make`
 
 Examples:
 
+Generate the configuration items for MongoDB Kubernetes Operator:
+
 ```
 $kubectl mongodb operator config --user jason.mimick --publicApiKey=foo123 --project foobar
 ---
@@ -36,6 +38,9 @@ $kubectl mongodb operator config --user jason.mimick --publicApiKey=foo123 --pro
 configmap/cloud-mgr-foobar-project created
 secret/cloud-mgr-foobar-authn created
 ```
+
+
+Fire up a `mongo` shell connection to your replica set:
 
 ```
 $eval $(kubectl mongodb shell --service my-replica-set-svc)
