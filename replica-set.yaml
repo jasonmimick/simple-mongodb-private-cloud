@@ -15,8 +15,8 @@ spec:
   # credentials Secret. For instructions on how to do this, please refer to our
   # documentation, here:
   # https://docs.opsmanager.mongodb.com/current/tutorial/install-k8s-operator
-  project: cloud-mgr-kube-project 
-  credentials: cloud-mgr-kube-authn 
+  project: mongodb-kubecon2018-config-map
+  credentials: mongodb-kubecon2018-secret
   # This flag allows the creation of pods without persistent volumes. This is for
   # testing only, and must not be used in production. 'false' will disable
   # Persistent Volume Claims. The default is 'true'

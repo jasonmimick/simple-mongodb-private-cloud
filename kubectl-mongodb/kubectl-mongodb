@@ -1,39 +1,294 @@
 #!/usr/bin/env python
 
-"""
-kubectl-mongodb
-
-A kubectl plugin which implements various utilies
-to provision, configure, and manage MongoDB deployments
-in a Kubernetes cluster and MongoDB Cloud Manager
-
-
-Usage: {filename} <subcommand> <arg1 arg2 arg3...>
-
-Available subcommands:
-
-- config <username:apikey>
-  Stores MongoDB Clous Manager user name and apikey into
-  the plugin configuration file: ./.kubectl.mongodb
-- projects <list|create>
-- operator <config|>
-- shell <service name>
-  Connects to and starts a mongo shell session with a target
-  service name.
-"""
-import sys, os
+import sys, os, io
+from string import Template
 import datetime
 import argparse
 import requests
+import base64 
 import json
 import copy
 from requests.auth import HTTPDigestAuth
 import time
+import yaml
 from kubernetes import client, config
 from kubernetes.stream import stream
+from os.path import expanduser
 
-KUBECTL_MONGODB_CONF = "./.kubectl-mongodb"
+KUBECTL_MONGODB_CONF = "%s/.kube/config-mongodb" % expanduser("~")
+class MongoDBCloudApi(object):
+
+  V1_API_ENDPOINT = "/api/public/v1.0"
+
+  debug = False
+  url = "https://cloud.mongodb.com"
+  project = "xxx"
+  username = "xxx"
+  public_api_key = "xxx"
+
+  def enable_debug(self):
+    self.debug = True
+  
+  def disable_debug(self):
+    self.debug = False
+
+  def __init__(self, config_map_name, secret_name, namespace):
+    #url, username, public_api_key,debug=false):
+    config.load_kube_config()
+    api = client.CoreV1Api()
+    config_map = api.read_namespaced_config_map(config_map_name, namespace)
+    #print('config_map=%s',config_map)
+    if not config_map.data:
+      print("ConfigMap '%s' not found" % config_map_name)
+      exit(1)
+    self.url = config_map.data['baseUrl']
+    self.project = config_map.data['projectName']
+    secret = api.read_namespaced_secret(secret_name, namespace)
+    if not secret.data:
+      print("Secret '%s' not found" % secret_name)
+      exit(1)
+    self.username = base64.b64decode(secret.data['user'])
+    self.public_api_key = base64.b64decode(secret.data['publicApiKey'])
+    print('self.username=%s, self.public_api_key=%s' % (self.username,self.public_api_key))
+    print("self=%s" % self)
+
+
+  @classmethod
+  def print_request(cls,req):
+    print('HTTP/1.1 {method} {url}\n{headers}\n\n{body}'.format(
+        method=req.method,
+        url=req.url,
+        headers='\n'.join('{}: {}'.format(k, v) for k, v in req.headers.items()),
+        body=req.body,
+    ))
+
+  @classmethod
+  def print_response(cls,res):
+    print('HTTP/1.1 {status_code}\n{headers}\n\n{body}'.format(
+        status_code=res.status_code,
+        headers='\n'.join('{}: {}'.format(k, v) for k, v in res.headers.items()),
+        body=res.content,
+    ))
+
+  def __get(self, endpoint, query_string=''):
+    url = "%s%s" % (self.url, endpoint)
+    if query_string:
+      url += query_string
+    response = requests.get(url,
+                    auth=HTTPDigestAuth(self.username,self.public_api_key))
+    if self.debug:
+      MongoDBCloudApi.print_request(response.request)
+      MongoDBCloudApi.print_response(response)
+    response.raise_for_status()
+    return response
+  
+  
+  def __post(self, endpoint, data):
+    url = "%s%s" % (self.url, endpoint)
+    headers = { "Content-Type" : "application/json" }
+    response = requests.post(url,
+                    auth=HTTPDigestAuth(self.username,self.public_api_key),
+                    data=json.dumps(data),
+                    headers=headers)
+    if self.debug:
+      MongoDBCloudApi.print_request(response.request)
+      MongoDBCloudApi.print_response(response)
+    response.raise_for_status()
+    return response
+
+  def __put(self, endpoint, data):
+    url = "%s%s" % (self.url, endpoint)
+    headers = { "Content-Type" : "application/json" }
+    response = requests.put(url,
+                    auth=HTTPDigestAuth(self.username,self.public_api_key),
+                    data=json.dumps(data),
+                    headers=headers)
+    if self.debug:
+      MongoDBCloudApi.print_request(response.request)
+      MongoDBCloudApi.print_response(response)
+    response.raise_for_status()
+    return response
+
+  def get_user_whitelist(self,user_name):
+     endpoint = "%s/users/byName/%s" % (self.V1_API_ENDPOINT, user_name)
+     user_info = self.__get(endpoint).json()
+     endpoint = "%s/users/%s/whitelist" % (self.V1_API_ENDPOINT, user_info['id'])
+     response = self.__get(endpoint)
+     return response.json()
+
+  def get_automation_configuration(self,project_name):
+    group_id = self.get_groupid_by_name(project_name)
+    endpoint = "%s/groups/%s/automationConfig" % (self.V1_API_ENDPOINT,group_id)
+    r = self.__get(endpoint)
+    return r.json()
+
+  def put_automation_configuration(self,project_name,automation_configuration):
+    group_id = self.get_groupid_by_name(project_name)
+    endpoint = "%s/groups/%s/automationConfig" % (self.V1_API_ENDPOINT,group_id)
+    r = self.__put(endpoint,automation_configuration)
+    return r.json()
+
+  def get_group_by_name(self, name):
+    endpoint = "%s/groups/byName/%s" % (self.V1_API_ENDPOINT, name)
+    r = self.__get(endpoint)
+    return r.json()
+
+  def get_groupid_by_name(self,name):
+    group = self.get_group_by_name(name)
+    return group['id']
+
+  """Return true if this Cloud API endpoint is OK"""
+  def OK(self):
+    return true
+
+
 class KubectlMongoDB(object):
+
+  PLUGIN_DEFAULT_K8S_OBJECT_NAME_TEMPLATE = "mongodb-$name-$type"
+  def get_k8s_object_name(self,name,type):
+    t = Template(KubectlMongoDB.PLUGIN_DEFAULT_K8S_OBJECT_NAME_TEMPLATE)
+    return t.substitute(name=name,type=type)
+
+  def __get_cloud_api(self,project):
+    config_map = self.get_k8s_object_name(project['project'],"config-map")     
+    secret = self.get_k8s_object_name(project['project'],"secret")     
+    api = MongoDBCloudApi(config_map,secret,project['namespace']) 
+    return api
+
+  def whitelist(self):
+    desc="""Manage user ip whitelist for Cloud manager"""
+    args = self.__get_args(desc, [ "command", "--project" ])
+    project = self.__get_config_project(args.project)
+    api = self.__get_cloud_api(project)
+    print('project=%s' % project)
+    api.enable_debug()
+
+    if args.command == 'list':
+      response = api.get_user_whitelist(project['user'])
+      print('response=%s' % response)
+
+
+  def project(self):
+    desc="""Dump out the automation config for the project"""
+    args = self.__get_args(desc, [ "command", "--project" ])
+
+    project = self.__get_config_project(args.project)
+    api = self.__get_cloud_api(project)
+    print('project=%s' % project)
+    api.enable_debug()
+    response = api.get_automation_configuration(project['project'])
+    print('processes:%s' % response['processes'])
+    print('keys:%s' % response.keys())
+    print('roles:%s' % response['roles'])
+    print('auth:%s' % response['auth'])
+    print('ssl:%s' % response['ssl'])
+
+  def authn(self):
+    desc="""Manage authentication settings for a MongoDB deployment running
+on Kubernetes. This is accomplished through the related MDB Private Cloud
+'Project' and the automation agent configuration.
+Command supported:
+list         - Output the current authentication settings
+add          - Add user(s), optional supply yaml file with user via --filename
+               Requires either --filename or --user, --db, --password, --roles
+               where --roles is a comma-delimited string of <role_name>@<db_name>
+               roles.
+delete       - Delete a user(s)
+passwd	     - Change a users password
+"""
+    args = self.__get_args(desc, [ "command", "--project", "--user","--password","--roles","--db","B--force"] )
+    if not args.project:
+      raise ValueError("the --project <project_name> flag is required")
+    project = self.__get_config_project(args.project)
+    api = self.__get_cloud_api(project)
+    api.enable_debug()
+
+    grp = api.get_group_by_name(args.project)
+    print("grp=%s" % grp)
+    auto_conf= api.get_automation_configuration(project['project'])
+    if args.command == "list":
+      print("list")
+      print('processes:%s' % auto_conf['processes'])
+      print('keys:%s' % auto_conf.keys())
+      print('roles:%s' % auto_conf['roles'])
+      print('auth:%s' % auto_conf['auth'])
+      print('ssl:%s' % auto_conf['ssl'])
+
+    if args.command == "disable":
+      print("disable - disable user/pwd authentication for a project")
+      if auto_conf['auth']['disabled'] == True:
+        print("Authentication is already disabled for project '%s'" % project['project'])
+        if not args.force:
+          raise SystemExit()
+        else:
+          print("--force was true, attemping disable")
+      auto_conf['auth']['disabled'] = False
+      #auto_conf['auth']['key']=''
+      #auto_conf['auth']['keyfile']=''
+      auto_conf['auth']['usersWanted'] = []
+      auto_conf['auth']['usersDeleted'] = [
+          { "user" : "mms-monitoring-agent", "dbs" : [ 'admin' ] },
+          { "user" : "mms-backup-agent", "dbs" : [ 'admin','local' ] }
+
+      ]
+      print('auth:%s' % auto_conf['auth'])
+      response = api.put_automation_configuration(project['project'],auto_conf)
+      print('response:%s' % response)
+
+    if args.command == "enable":
+      print("enable - enable user/pwd authentication for a project")
+      if auto_conf['auth']['disabled'] == False:
+        print("Authentication is alreday enabled for project '%s'" % project['project'])
+        raise SystemExit()
+        
+      auto_conf['auth']['disabled'] = False
+      key = "mongo-on-kubernetes-rules" 
+      key_file = "/mongodb-automation/mongo_om.key"
+      auto_conf['auth']['key']=key
+      auto_conf['auth']['keyfile']=key_file
+      # add mms-monitoring-agent
+      gen_pwd = "mongo-on-kubernetes-rules"
+      user = { "user" : "mms-monitoring-agent", "db" : "admin", "initPwd" : gen_pwd }
+      user['roles']=[ { "role" : 'clusterMonitor', "db" : 'admin' } ]
+      auto_conf['auth']['usersWanted'].append(user)
+
+      user = { "user" : "mms-backup-agent", "db" : "admin", "initPwd" : gen_pwd }
+      user['roles']=[ 
+           { "role" : 'clusterAdmin', "db" : 'admin' }
+         , { "role" : 'readWriteAnyDatabase', "db" : 'admin' }
+      ]
+      auto_conf['auth']['usersWanted'].append(user)
+      
+      print('auth:%s' % auto_conf['auth'])
+      response = api.put_automation_configuration(project['project'],auto_conf)
+      print('response:%s' % response)
+
+    if args.command == "add":
+      print("create - not implemented yet.")
+      user = { "user" : args.user, "db" : args.db, "initPwd" : args.password }
+      roles = []
+      arg_roles = args.roles.split(',')
+      # the following comprehension does it faster but not good for errors
+      #arg_roles = [ role.split('@') for role in roles.split(',') ]
+      for role in arg_roles:
+        r = role.split('@')
+        if not len(r)==2:
+          raise ValueError("Invalid --roles %s (Check '%s') detected, please check and try again" % (args.roles,role))
+        roles.append( { "role" : r[0], "db" : r[1] } )
+      user['roles']=roles
+      auto_conf['auth']['usersWanted'].append(user)
+      print('auth:%s' % auto_conf['auth'])
+      response = api.put_automation_configuration(project['project'],auto_conf)
+      print('response:%s' % response)
+
+    if args.command == "delete":
+			print("delete - not implemented yet.")
+
+    if args.command == "passwd":
+			print("passwd - not implemented yet.")
+
+
+
 
   def shell(self):
     #print("shell command")
@@ -109,51 +364,108 @@ $eval $(kubectl mongodb shell --service my-replica-set-svc)
 
   def operator(self):
     # read the .kubectl-mongodb
-    args = self.__get_args('operator commands', [ 'command', '--project', '--user', '--publicApiKey' ] )
+    desc = """operator commands - config|install
+#Output ConfigMap and Secret to be used by project 'foobar'
+$kubectl mongodb operator config --project foobar
+
+$kubectl mongodb operator install --namespace <namespace>
+"""
+    args = self.__get_args(desc, [ 'command', '--project' ] )
+    if args.command=="install":
+      print("install not implemented yet")
+      exit(1)
+   
+    if not args.command=="config":
+      print("Unknown command '%s'" % args.command)
+      exit(1)
+
+    # only config command from here
+    if not args.project:
+      print("--project parameter is required")
+      exit(1)
+    cp = self.__get_config_project(args.project)
+    config_map_name = self.get_k8s_object_name(cp['project'],"config-map")     
+    secret_name = self.get_k8s_object_name(cp['project'],"secret")     
     
     config_map="""---
 apiVersion: v1
 kind: ConfigMap
 metadata:
-  name: cloud-mgr-{project}-project
+  name: {config_map_name}
 data:
   projectName: {project}
-  baseUrl: https://cloud.mongodb.com"""
-    if args.user: 
-      user="user: %s" % args.user
-      publicApiKey="publicApiKey: %s" % args.publicApiKey
-    else:   
-      if not os.path.exists(KUBECTL_MONGODB_CONF):
-        print("kubectl-mongodb is not configured, please run 'kubectl mongodb config -h'")
-        raise SystemExit()
-      with open(KUBECTL_MONGODB_CONF, 'rw') as f:
-        user=f.readline()
-        publicApiKey=f.readline()
-
+  baseUrl: {baseUrl}"""
     secret="""---
 apiVersion: v1
 kind: Secret
 metadata:
-  name: cloud-mgr-{project}-authn
+  name: {secret_name}
 type: Opaque
 stringData:
-  {user}
-  {publicApiKey}"""
+  user: {user}
+  publicApiKey: {publicApiKey}"""
 
-    print( config_map.format(project=args.project) )
-    print( secret.format(project=args.project, user=user, publicApiKey=publicApiKey) )
+    print( config_map.format(config_map_name=config_map_name,project=cp['project'],baseUrl=cp['baseUrl']) )
+    print( secret.format(secret_name=secret_name,project=cp['project'], user=cp['user'], publicApiKey=cp['publicApiKey']) )
     
+
+  def __get_config(self):
+    config = {}
+    with io.open(KUBECTL_MONGODB_CONF, 'r', encoding='utf8') as f:
+      config = yaml.load(f)
+    return config
+
+  def __get_config_project(self,project_name):
+    config = self.__get_config()
+    projects = config['projects']
+    p = [d for d in projects if d['project'] == project_name]
+    if len(p)>0:
+      return p[0]
+    else:
+      raise ValueError("Unable to find project '%s' in %s" % (project,KUBECTL_MONGODB_CONF)) 
+
   def config(self):
 
-    print("configcommand")
-    args = self.__get_args('Configure user & publicApiKey', [ 'command', '--user', '--publicApiKey']) 
-    print 'user=%s, publicApiKey=%s' % (args.user, args.publicApiKey)
-    with open(KUBECTL_MONGODB_CONF, 'rw') as f:
-      if args.command == 'set':
-        f.write("user: %s" % args.user)
-        f.write("publicApiKey: %s" % args.publicApiKey)
-      if args.command == 'get':
-        print f.read()
+    #print("configcommand")
+    args = self.__get_args('Configure user & publicApiKey', [ 'command', '--user', '--publicApiKey', '--project', '--baseUrl', '--namespace']) 
+    #print 'user=%s, publicApiKey=%s' % (args.user, args.publicApiKey)
+
+    if not os.path.exists(KUBECTL_MONGODB_CONF):
+      config = { "apiVersion" : "v1", "projects" : [] }
+      #print('config=%s' % config)      
+      # Write YAML file
+      with io.open(KUBECTL_MONGODB_CONF, 'w+', encoding='utf8') as outfile:
+        #yaml.dump(config, outfile, default_flow_style=False, allow_unicode=True)
+        yaml.dump(config, outfile, default_flow_style=False)
+    
+    config = self.__get_config()
+ 
+    #print("config=%s" % config) 
+    # dump out file
+    if args.command == 'get':
+      print yaml.dump(config)
+    
+    # load up config file yaml, inject new project or update & save
+    if args.command == 'set':
+      project = { 
+        "project" : args.project,
+        "namespace" : args.namespace,
+        "user" : args.user,
+        "publicApiKey" : args.publicApiKey,
+        "baseUrl" : args.baseUrl
+      }
+
+      # validate and warn if this project isn't valid or no active anymore
+      # this will prevent issues when trying to deploy      
+      api = self.__get_cloud_api(project)
+      # remove this project if it's there
+      for existing_project in config['projects']:
+        if existing_project['project'] == project['project']:
+          config['projects'] = [x for x in config['projects'] if not (args.project == x.get('project'))]
+      # add this project
+      config['projects'].append(project)  
+      with io.open(KUBECTL_MONGODB_CONF, 'w', encoding='utf8') as f:
+        yaml.dump(config, f, default_flow_style=False)
       
 
   def help(self):
@@ -161,10 +473,13 @@ stringData:
 
   def __get_args(self, description, args):
     parser = argparse.ArgumentParser(
-            description=description)
+            description=description,formatter_class=argparse.RawTextHelpFormatter)
     # prefixing the argument with -- means it's optional
     for arg in args:
-      parser.add_argument(arg)
+      if arg[0]=='B':
+        parser.add_argument(arg[1:],action='store_true')
+      else:
+        parser.add_argument(arg)
     # now that we're inside a subcommand, ignore the first
     # TWO argvs, ie the command (git) and the subcommand (commit)
     args = parser.parse_args(sys.argv[2:])
@@ -172,7 +487,32 @@ stringData:
 
   # "main"
   def __init__(self):
-    parser = argparse.ArgumentParser(description="kubectl-mongodb - a kubectl plugin")
+    description="""
+kubectl-mongodb
+
+A kubectl plugin which implements various utilies
+to provision, configure, and manage MongoDB deployments
+in a Kubernetes cluster and MongoDB Cloud Manager
+
+
+Usage: {filename} <subcommand> <arg1 arg2 arg3...>
+
+Available subcommands:
+
+- config <get|set>
+  Stores MongoDB Ops/Cloud Manager baseUrl, user, public api key, and project/group name into
+  the plugin configuration file: ./.kubectl.mongodb
+  Reference a particular configuration with the --project <project_name> flag to other
+  commands.
+- projects <list|create>
+- operator <config|>
+- shell <service name>
+  Connects to and starts a mongo shell session with a target
+  service name.
+"""
+
+    parser = argparse.ArgumentParser(
+               description=description,formatter_class=argparse.RawTextHelpFormatter)
     parser.add_argument('command', help='Subcommand to run')
     # parse_args defaults to [1:] for args, but you need to
     # exclude the rest of the args too, or validation will fail
