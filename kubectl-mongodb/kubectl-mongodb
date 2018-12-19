@@ -32,7 +32,7 @@ class MongoDBCloudApi(object):
   def disable_debug(self):
     self.debug = False
 
-  def __init__(self, config_map_name, secret_name, namespace):
+  def X__init__(self, config_map_name, secret_name, namespace):
     #url, username, public_api_key,debug=false):
     config.load_kube_config()
     api = client.CoreV1Api()
@@ -52,7 +52,13 @@ class MongoDBCloudApi(object):
     print('self.username=%s, self.public_api_key=%s' % (self.username,self.public_api_key))
     print("self=%s" % self)
 
-
+  def __init__(self, project_config):
+    
+    self.url = project_config['baseUrl']
+    self.project = project_config['project']
+    self.username = project_config['user']
+    self.public_api_key = project_config['publicApiKey']
+    
   @classmethod
   def print_request(cls,req):
     print('HTTP/1.1 {method} {url}\n{headers}\n\n{body}'.format(
@@ -71,10 +77,27 @@ class MongoDBCloudApi(object):
     ))
 
   def __get(self, endpoint, query_string=''):
+    if not endpoint.startswith('http'):
+      url = "%s%s" % (self.url, endpoint)
+    else:
+      url = endpoint
+    if query_string:
+      url += "?%s" % query_string
+    if self.debug:
+      print("MongoDBCloudApi __get url:%s" % url)
+    response = requests.get(url,
+                    auth=HTTPDigestAuth(self.username,self.public_api_key))
+    if self.debug:
+      MongoDBCloudApi.print_request(response.request)
+      MongoDBCloudApi.print_response(response)
+    response.raise_for_status()
+    return response
+  
+  def __delete(self, endpoint, query_string=''):
     url = "%s%s" % (self.url, endpoint)
     if query_string:
       url += query_string
-    response = requests.get(url,
+    response = requests.delete(url,
                     auth=HTTPDigestAuth(self.username,self.public_api_key))
     if self.debug:
       MongoDBCloudApi.print_request(response.request)
@@ -137,10 +160,28 @@ class MongoDBCloudApi(object):
     group = self.get_group_by_name(name)
     return group['id']
 
+  def delete_group(self, group_id):
+    endpoint = "%s/groups/%s" % (self.V1_API_ENDPOINT, group_id)
+    r = self__delete(endpoint)
+    return r.json()
+
+  def delete_org(self, org_id):
+    endpoint = "%s/orgs/%s" % (self.V1_API_ENDPOINT, group_id)
+    r = self__delete(endpoint)
+    return r.json()
+
+
   """Return true if this Cloud API endpoint is OK"""
   def OK(self):
     return true
 
+  def GET(self,endpoint,query_string=""):
+    if not endpoint.startswith('http'):
+      endpoint = "%s/%s" % (self.V1_API_ENDPOINT, endpoint)
+    print("GET endpoint:%s" % endpoint)
+    r = self.__get(endpoint,query_string)
+    return r.json()
+    
 
 class KubectlMongoDB(object):
 
@@ -150,11 +191,47 @@ class KubectlMongoDB(object):
     return t.substitute(name=name,type=type)
 
   def __get_cloud_api(self,project):
-    config_map = self.get_k8s_object_name(project['project'],"config-map")     
-    secret = self.get_k8s_object_name(project['project'],"secret")     
-    api = MongoDBCloudApi(config_map,secret,project['namespace']) 
+    #config_map = self.get_k8s_object_name(project['project'],"config-map")     
+    #secret = self.get_k8s_object_name(project['project'],"secret")     
+    print("__get_cloud_api project='%s'" % project)
+    api = MongoDBCloudApi(project)
+    #api = MongoDBCloudApi(config_map,secret,project['namespace']) 
     return api
 
+  def clean_up_atlas_projects(self):
+    desc="""Manage CloudMgr/Atlas groups"""
+    args = self.__get_args(desc, [ "--project", "--projectNameFilter" ])
+    project = self.__get_config_project(args.project)
+    api = self.__get_cloud_api(project)
+    print('projectNameFilter=%s' % args.projectNameFilter)
+    #api.enable_debug()
+    # loop through all groups for the user which match filter
+    # for each delete the group/project, then attempt to delete the parent
+    # org, which will fail if there are other projects in the org, which is ok
+    groups = api.GET("groups","itemsPerPage=500")
+    while groups:
+      for group in groups['results']:
+        if not group['name']:
+          #print("Got empty group name, skipping...")
+          continue
+        if not group['name'].startswith(args.projectNameFilter):
+          #print("Skipping group '%s', does not match filter '%s'" % (group['name'],args.projectNameFilter))
+          continue
+        print("About to delete group %s id:%s" % (group['name'], group['id']))
+        #response = api.delete_group(group['id'])
+        #print("delete-group - response: %s" % response)
+        print("About to delete org id:%s" % (group['orgId']))
+        #response = api.delete_org(group['orgId'])
+        #print("delete-group - response: %s" % response)
+      next_url = [h for h in groups['links'] if h['rel'] == 'next']
+      print("got next_url:%s" % next_url)
+      if next_url[0]:
+        href = next_url[0]['href']
+        print("href:%s" % href)
+        groups = api.GET(href)
+      else:
+        group = "" 
+    
   def whitelist(self):
     desc="""Manage user ip whitelist for Cloud manager"""
     args = self.__get_args(desc, [ "command", "--project" ])
