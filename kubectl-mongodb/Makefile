@@ -1,5 +1,5 @@
 all: 
 	@ echo "kubectl-mongodb"
 	chmod +x ./kubectl-mongodb
-	cp ./kubectl-mongodb ~/bin  
+	bash -c "cp ./kubectl-mongodb $$(dirname $$(which kubectl))"
 

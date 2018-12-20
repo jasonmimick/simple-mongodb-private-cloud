@@ -1,3 +1,5 @@
+# kubectl-mongodb
+# a kubectl plugin for enterprise mongodb
 #!/usr/bin/env python
 
 import sys, os, io
