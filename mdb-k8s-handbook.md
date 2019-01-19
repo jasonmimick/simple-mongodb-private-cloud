@@ -1,46 +1,61 @@
-Hello, MongoDB Kubernetes Operator
+# The MongoDB Kubernetes Handbook
 
-A guide to the history, design, how to get started, and resources for the MongoDB Kubernetes Operator
+*A guide to the history, design, how to get started, and resources for the MongoDB Kubernetes Operator*
 
-Table of Contents
-Introduction
-History
-Design
-Getting Started
-minikube
-GCE
-Production Notes
-Containerizing MongoDB Ops Manager
-Namespace Considerations
+Table of Contents
+===
+[Introduction](#introduction)
+
+[History](#History)
+
+[Design](#Design)
+
+[Getting Started](#Getting Started)
+
+[minikube](#minikube)
+
+[GCE](#GCE)
+
+[Production Notes](#Production Notes)
+
+[Containerizing MongoDB Ops Manager](#Containerizing MongoDB Ops Manager)
+
+[Namespace Considerations](#namespace-considerations)
+
 Resources
-Index
+Index
 
-
-Introduction
+## Introduction
 [get some industry expert to write an intro]
-History
+
+
+## History
 [MongoDB, Containers, Orchestration Platforms, Product Strategy]
-Design
+
+
+## Design
 [OpsMgr/K8s/principles]
-Getting Started
+
+## Getting Started
+
 There are a number of ways to get started using the MongoDB Kubernetes Operator, but the most important place to start is to determine how and where you're planning to run Kubernetes. For this guide, we focus on two particularly simple and easy ways to get Kubernetes up and running: minikube and GCE (Google Container Engine). But, the overall steps are similar for other Kubernetes distributions or cloud-based services.
 
-minikube
+### minikube
+
 minikube is a single VM-based Kubernetes distribution which you typically run directly on your own computer. It is widely used for development and testing purposes, and ideally suited for your first foray into learning about running MongoDB and Kubernetes together.
 
- 
 For both getting started options, we'll also use MongoDB Cloud Manager to make things faster. See Containerizing MongoDB Ops Manager for information on running Ops Manager within your Kubernetes cluster. Apart from needing to first instal MongoDB Ops Manager, the steps are identical.
 
-
-Download & Install Prerequisites
+#### Download & Install Prerequisites
 
 Install minikube: https://kubernetes.io/docs/tasks/tools/install-minikube/
 
 Clone the mdb-k8s-op Github repository:
 
+```bash
 $# cd to directory you want to clone repository
 $git clone https://github.com/mongodb/mongodb-enterprise-kubernetes
-
+```
 
 Configure MongoDB Cloud Manager
 
