@@ -45,10 +45,10 @@ type MongoDB deployments.
 
 The MongoDB Operator ships two Docker images one for the operator itself and one
 for the database runtime. The db runtime image contains the MongoDB Automation
-Agent binaries, and it is this process which is practically[^1] the main process for
+Agent binaries, and it is this process which is practically[1] the main process for
 the database container.
 
-[^1]: Practically, since technically the container runs a `supervisord` process
+[1]: Practically, since technically the container runs a `supervisord` process
 which watches the `automation-agent` process. This is it facilitate agent
 upgrades without the container getting killed.
 
