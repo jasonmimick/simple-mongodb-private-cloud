@@ -6,23 +6,23 @@ Table of Contents
 ===
 [Introduction](#introduction)
 
-[History](#History)
+[History](#history)
 
-[Design](#Design)
+[Design](#design)
 
-[Getting Started](#Getting Started)
+[Getting Started](#getting-started)
 
 [minikube](#minikube)
 
-[GCE](#GCE)
+[GCE](#gce)
 
-[Production Notes](#Production Notes)
+[Production Notes](#production-notes)
 
-[Containerizing MongoDB Ops Manager](#Containerizing MongoDB Ops Manager)
+[Containerizing MongoDB Ops Manager](#containerizing-mongoDB-ops-manager)
 
 [Namespace Considerations](#namespace-considerations)
 
-[Resources](#Resources)
+[Resources](#resources)
 
 Index
 
