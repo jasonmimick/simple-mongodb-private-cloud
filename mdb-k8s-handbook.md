@@ -48,8 +48,8 @@ for the database runtime. The db runtime image contains the MongoDB Automation
 Agent binaries, and it is this process which is practically<sup>1</sup> the main process for
 the database container.
 
-<sup>1</sup>*Practically*, since technically the container runs a `supervisord` process
-which watches the `automation-agent` process. This is it facilitate agent
+<sup>1</sup> *Practically*, since technically the container runs a `supervisord` process
+which watches the `automation-agent` process. This is done to facilitate agent
 upgrades without the container getting killed.
 
 ## Getting Started
