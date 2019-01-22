@@ -22,12 +22,13 @@ Table of Contents
 
 [Namespace Considerations](#namespace-considerations)
 
-Resources
+[Resources](#Resources)
+
 Index
 
 ## Introduction
-[get some industry expert to write an intro]
 
+[intro]
 
 ## History
 [MongoDB, Containers, Orchestration Platforms, Product Strategy]
@@ -38,13 +39,24 @@ Index
 
 ## Getting Started
 
-There are a number of ways to get started using the MongoDB Kubernetes Operator, but the most important place to start is to determine how and where you're planning to run Kubernetes. For this guide, we focus on two particularly simple and easy ways to get Kubernetes up and running: minikube and GCE (Google Container Engine). But, the overall steps are similar for other Kubernetes distributions or cloud-based services.
+There are a number of ways to get started using the MongoDB Kubernetes Operator,
+but the most important place to start is to determine how and where you're
+planning to run Kubernetes. For this guide, we focus on two particularly simple
+and easy ways to get Kubernetes up and running: minikube and GCE (Google
+Container Engine). But, the overall steps are similar for other Kubernetes
+distributions or cloud-based services.
 
 ### minikube
 
-minikube is a single VM-based Kubernetes distribution which you typically run directly on your own computer. It is widely used for development and testing purposes, and ideally suited for your first foray into learning about running MongoDB and Kubernetes together.
+minikube is a single VM-based Kubernetes distribution which you typically run
+directly on your own computer. It is widely used for development and testing
+purposes, and ideally suited for your first foray into learning about running
+MongoDB and Kubernetes together.
 
-For both getting started options, we'll also use MongoDB Cloud Manager to make things faster. See Containerizing MongoDB Ops Manager for information on running Ops Manager within your Kubernetes cluster. Apart from needing to first instal MongoDB Ops Manager, the steps are identical.
+For both getting started options, we'll also use MongoDB Cloud Manager to make
+things faster. See Containerizing MongoDB Ops Manager for information on running
+Ops Manager within your Kubernetes cluster. Apart from needing to first instal
+MongoDB Ops Manager, the steps are identical.
 
 #### Download & Install Prerequisites
 
@@ -57,25 +69,27 @@ $# cd to directory you want to clone repository
 $git clone https://github.com/mongodb/mongodb-enterprise-kubernetes
 ```
 
-Configure MongoDB Cloud Manager
+#### Configure MongoDB Cloud Manager
 
 1. Login or create an account at https://cloud.mongodb.com
 
 2. Create an API Key and enable API access via whitelist: 
 https://docs.cloudmanager.mongodb.com/tutorial/configure-public-api-access/
 
-Be sure to copy and paste your API Key, you will need to add this to a Kubernetes secret later. You should see something similar to:
+Be sure to copy and paste your API Key, you will need to add this to a
+Kubernetes secret later. You should see something similar to:
 
+##### Create a project in Cloud Manager:
+https://docs.cloudmanager.mongodb.com/tutorial/manage-projects/#create-a-project
 
+Note down your project name, for demonstration purposes, we'll use
+hello-mongo-kube as our project name throughout this guide.
 
-3. Create a project in Cloud Manager: https://docs.cloudmanager.mongodb.com/tutorial/manage-projects/#create-a-project
-
-Note down your project name, for demonstration purposes, we'll use hello-mongo-kube as our project name throughout this guide.
-
-Create minikube cluster
+#### Create minikube cluster
 
 A simple, default, cluster will work for this demonstration:
 
+```bash
 ➜  minikube version
 minikube version: v0.32.0
 ➜  minikube start
@@ -99,9 +113,11 @@ host: Running
 kubelet: Running
 apiserver: Running
 kubectl: Correctly Configured: pointing to minikube-vm at 192.168.99.100
+```
 
 Let's check and make sure the kubectl command is working properly:
 
+```bash
 ➜  kubectl get all --all-namespaces
 NAMESPACE     NAME                                        READY   STATUS    RESTARTS   AGE
 kube-system   pod/coredns-576cbf47c7-ckxgk                1/1     Running   0          2m31s
@@ -130,11 +146,18 @@ kube-system   deployment.apps/kubernetes-dashboard   1         1         1      
 NAMESPACE     NAME                                              DESIRED   CURRENT   READY   AGE
 kube-system   replicaset.apps/coredns-576cbf47c7                2         2         2       2m31s
 kube-system   replicaset.apps/kubernetes-dashboard-5bff5f8fb8   1         1         1       2m30s
+```
 
-Create Kubernetes Namespace
+#### Create Kubernetes Namespace
 
-By default, the MongoDB Kubernetes Operator will attempt to install and watch for database resource events in a namespace called mongodb. This can be customized in different ways, see Namespace Considerations for more information. For this example we'll just use the default, and to do so, we need to create this namespace. The follow code snippet shows creating the namespace, verifying it's there, and then setting mongodb to be the default namespace for kubectl.
+By default, the MongoDB Kubernetes Operator will attempt to install and watch
+for database resource events in a namespace called mongodb. This can be
+customized in different ways, see Namespace Considerations for more information.
+For this example we'll just use the default, and to do so, we need to create
+this namespace. The follow code snippet shows creating the namespace, verifying
+it's there, and then setting mongodb to be the default namespace for kubectl.
 
+```bash
 ➜  kubectl create namespace mongodb
 namespace/mongodb created
 ➜  kubectl get namespaces
@@ -147,9 +170,9 @@ mongodb       Active   32s
 Context "minikube" modified.
 ➜  kubectl get all
 No resources found.
+```
 
-
-Install MongoDB Kubernetes Operator
+#### Install MongoDB Kubernetes Operator
 
 In this step we will install the CRDs and Operator itself into Kubernetes.
 
@@ -166,7 +189,8 @@ serviceaccount/mongodb-enterprise-operator created
 deployment.apps/mongodb-enterprise-operator created
 ```
 
-We can verify things installed and the operator is running with a few other commands:
+We can verify things installed and the operator is running with a few other
+commands:
 
 ```bash
 ➜  kubectl get crds | grep mongodb
@@ -195,15 +219,22 @@ replicaset.apps/mongodb-enterprise-operator-5c9c9b764b   1         1         1  
 {"level":"info","ts":1547818116.434018,"caller":"ops-manager-kubernetes/main.go:59","msg":"Starting the Cmd."}
 ```
 
-There's quite a bit of log data, the important thing is the "Starting the Cmd." at the end. We should be ready for the next step.
+There's quite a bit of log data, the important thing is the "Starting the Cmd."
+at the end. We should be ready for the next step.
 
-Configure MongoDB Kubernetes Operator
+#### Configure MongoDB Kubernetes Operator
 
-The last step before we can start deploying MongoDB into this new cloud-native environment is to add two configuration items into our Kubernetes cluster. These two items, a ConfigMap and a Secret, are referenced by MongoDB database deployment definitions and accessed at run-time by the operator. They store connection information so that the operator can communicate securely with your Ops Manager, or Cloud Manager in this case, instance.
+The last step before we can start deploying MongoDB into this new cloud-native
+environment is to add two configuration items into our Kubernetes cluster. These
+two items, a ConfigMap and a Secret, are referenced by MongoDB database
+deployment definitions and accessed at run-time by the operator. They store
+connection information so that the operator can communicate securely with your
+Ops Manager, or Cloud Manager in this case, instance.
 
-Create Secret for Cloud Manager credentials:
+##### Create Secret for Cloud Manager credentials:
 
-We'll create a secret called cloud-manager. Replace your user and publicApiKey below appropriately:
+We'll create a secret called cloud-manager. Replace your user and publicApiKey
+below appropriately:
 
 ```bash
 ➜  kubectl create secret generic cloud-manager \
@@ -225,9 +256,10 @@ user:          12 bytes
 
 See: https://docs.opsmanager.mongodb.com/current/tutorial/install-k8s-operator/index.html#create-credentials
 
-Create ConfigMap for Cloud Manager project:
+##### Create ConfigMap for Cloud Manager project:
 
-Edit and save a file called hello-mongo-kube-project.yaml with the following content:
+Edit and save a file called hello-mongo-kube-project.yaml with the following
+content:
 
 ```yaml
 ---
@@ -265,11 +297,15 @@ Events:  <none>
 
 See: https://docs.opsmanager.mongodb.com/current/tutorial/install-k8s-operator/index.html#create-your-onprem-project-and-k8s-k8s-configmap
 
-Deploy MongoDB Replica Set
+#### Deploy a MongoDB Replica Set
 
-Finally, we're ready to get a database up and running. The good news is that all the setup and configuration we just went through is only needed once! (If you want to organize your MongoDB databases into multiple different Ops Manager projects, then you'll need a ConfigMap for each one.)
+Finally, we're ready to get a database up and running. The good news is that all
+the setup and configuration we just went through is only needed once! (If you
+want to organize your MongoDB databases into multiple different Ops Manager
+projects, then you'll need a ConfigMap for each one.)
 
-Each database configuration is defined in a yaml file, so to create a basic starter MongoDB replica set, create and edit a file like so,
+Each database configuration is defined in a yaml file, so to create a basic
+starter MongoDB replica set, create and edit a file like so,
 
 ```bash
 ➜  mongodb-enterprise-kubernetes git:(master) ✗ cat hello-db.yaml
@@ -290,7 +326,8 @@ spec:
   persistent: true
 ```
 
-In another shell session you can follow the operator logs to watch things happen when deploying a MongoDB replica set in the next step.
+In another shell session you can follow the operator logs to watch things happen
+when deploying a MongoDB replica set in the next step.
 
 ```bash
 ➜  kubectl logs -f deployment.apps/mongodb-enterprise-operator
@@ -300,9 +337,9 @@ In another shell session you can follow the operator logs to watch things happen
 {"level":"info","ts":1547822529.7055557,"caller":"ops-manager-kubernetes/main.go:59","msg":"Starting the Cmd."}
 ```
 
-
 Next, provision the database cluster through Kubernetes:
 
+```bash
 ➜  kubectl create -f hello-db.yaml
 mongodbreplicaset.mongodb.com/hello-db created
 ➜  kubectl get all
@@ -324,30 +361,42 @@ replicaset.apps/mongodb-enterprise-operator-5c9c9b764b   1         1         1  
 
 NAME                        DESIRED   CURRENT   AGE
 statefulset.apps/hello-db   3         3         40s
+```
 
 In the operator logs, you should see something like:
 
+```json
 {"level":"info","ts":1547822837.944861,"caller":"operator/kubehelper.go:261","msg":"Service doesn't exist - creating it","ReplicaSet":"mongodb/hello-db","service":"hello-db-svc-external"}
 {"level":"info","ts":1547822837.9751043,"caller":"operator/kubehelper.go:267","msg":"Created service","ReplicaSet":"mongodb/hello-db","service":"hello-db-svc-external","type":"NodePort","port":{"protocol":"TCP","port":27017,"targetPort":27017,"nodePort":30654}}
 {"level":"info","ts":1547822837.9996543,"caller":"operator/kubehelper.go:194","msg":"Waiting until statefulset and its pods reach READY state...","ReplicaSet":"mongodb/hello-db","statefulset":"hello-db"}
 {"level":"info","ts":1547822848.0013993,"caller":"operator/kubehelper.go:206","msg":"Created statefulset","ReplicaSet":"mongodb/hello-db","statefulset":"hello-db","time":10.176720956}
 {"level":"info","ts":1547822848.0014863,"caller":"operator/mongodbreplicaset_controller.go:99","msg":"Updated statefulset for replica set","ReplicaSet":"mongodb/hello-db"}
 {"level":"info","ts":1547822848.0015135,"caller":"operator/common.go:116","msg":"Waiting for agents to register with OM","ReplicaSet":"mongodb/hello-db","statefulset":"hello-db","agent hosts":["hello-db-0.hello-db-svc.mongodb.svc.cluster.local","hello-db-1.hello-db-svc.mongodb.svc.cluster.local","hello-db-2.hello-db-svc.mongodb.svc.cluster.local"]}
+```
 
+_NOTE_: When using Cloud Manager it seems the wildcard ip 0.0.0.0/0 doesn't get
+applied correctly. If you see messages like this in the operator logs, then add
+the IP from the error message to your Cloud Manager whitelist.
 
-NOTE: When using Cloud Manager it seems the wildcard ip 0.0.0.0/0 doesn't get applied correctly. If you see messages like this in the operator logs, then add the IP from the error message to your Cloud Manager whitelist.
-
+```json
 {"level":"error","ts":1547819819.422789,"caller":"operator/controller.go:131","msg":"Failed to prepare Ops Manager connection: Error reading or creating project in Ops Manager: Error reading all groups for user \"jason.mimick\" in Ops Manager: Status: 403 (Forbidden), ErrorCode: IP_ADDRESS_NOT_ON_WHITELIST, Detail: IP address 76.246.93.324 is not allowed to access this resource.",
+```
 
 After a few minutes, you should be able to see you new MongoDB replica set
 
-Test database connection
+#### Test the database connection
 
-As a bonus step, let's try and test connecting to the database we just deployed. That's is afterall why you've gone through all this.
+As a bonus step, let's try and test connecting to the database we just deployed.
+That's is afterall why you've gone through all this.
 
-One way to test connectivity is to use the mongo shell. For this, we need a connection string. In order to build this connection string in the mongodb+srv:// format, we need to figure out the DNS name for the internal ClusterIP service created for our replica set via the operator.
+One way to test connectivity is to use the mongo shell. For this, we need a
+connection string. In order to build this connection string in the
+`mongodb+srv://` format, we need to figure out the DNS name for the internal
+ClusterIP service created for our replica set via the operator.
 
-The following snippet finds the name of this internal service, launches a pod to run a host command in to query the native cluster DNS for SRV records and see how they are mapped to the actual pod's running the MongoDB replica set.
+The following snippet finds the name of this internal service, launches a pod to
+run a host command in to query the native cluster DNS for SRV records and see
+how they are mapped to the actual pod's running the MongoDB replica set.
 
 ```bash
 ➜  kubectl get services
@@ -383,15 +432,29 @@ clean up testing pods:
 kubectl delete pod {dnstester,mongo-test}
 ```
 
-GCE
-Production Notes
+### GCE
+
+## Production Notes
 [inject general production notes, deployment blueprints]
-Containerizing MongoDB Ops Manager
-Namespace Considerations
-Resources
+### Prod notes
+
+### Deployment Blueprints
+
+##### Basic 3-Node Replica Set
+
+##### Microservice
+
+##### MDBaaS
+
+### Namespace Considerations
+
+## Containerizing MongoDB Ops Manager
 
 
-What
+## Resources
+
+
+## What
 Where
 Source repository for mdb-k8s-op artifacts
 https://github.com/mongodb/mongodb-enterprise-kubernetes
