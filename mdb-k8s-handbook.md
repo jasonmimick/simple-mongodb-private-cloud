@@ -1,6 +1,7 @@
 # The MongoDB Kubernetes Handbook
 
-*A guide to the history, design, how to get started, and resources for the MongoDB Kubernetes Operator*
+*A guide to the history, design, how to get started, and resources for the
+MongoDB Kubernetes Operator*
 
 Table of Contents
 ===
@@ -53,10 +54,10 @@ directly on your own computer. It is widely used for development and testing
 purposes, and ideally suited for your first foray into learning about running
 MongoDB and Kubernetes together.
 
-For both getting started options, we'll also use MongoDB Cloud Manager to make
-things faster. See Containerizing MongoDB Ops Manager for information on running
-Ops Manager within your Kubernetes cluster. Apart from needing to first instal
-MongoDB Ops Manager, the steps are identical.
+For both getting started options, we'll use MongoDB Cloud Manager. See
+Containerizing MongoDB Ops Manager for information on running Ops Manager within
+your Kubernetes cluster. Apart from needing to first instal MongoDB Ops Manager,
+the steps are identical.
 
 #### Download & Install Prerequisites
 
@@ -454,25 +455,20 @@ kubectl delete pod {dnstester,mongo-test}
 ## Resources
 
 
-## What
-Where
-Source repository for mdb-k8s-op artifacts
-https://github.com/mongodb/mongodb-enterprise-kubernetes
-Container repository with mdb-k8s operator images
-https://quay.io/organization/mongodb
-Official Installation Documentation
-https://docs.opsmanager.mongodb.com/current/tutorial/install-k8s-operator/
-Troubleshooting 
-https://docs.opsmanager.mongodb.com/current/reference/troubleshooting/k8s/
-Webinars
+| What | Where |
+| ---- | ----- |
+| Source repository for mdb-k8s-op artifacts |
+https://github.com/mongodb/mongodb-enterprise-kubernetes |
+| Container repository with mdb-k8s operator images | https://quay.io/organization/mongodb |
+| Official Installation Documentation |
+https://docs.opsmanager.mongodb.com/current/tutorial/install-k8s-operator/ |
+| Troubleshooting |
+https://docs.opsmanager.mongodb.com/current/reference/troubleshooting/k8s/ |
+| Webinars | <TODO> |
+| Blogs |
+https://blog.openshift.com/mongodb-kubernetes-operator/<br/>https://www.mongodb.com/blog/post/introducing-mongodb-enterprise-operator-for-kubernetes-openshift<br/>https://hackernoon.com/getting-started-with-mongodb-enterprise-operator-for-kubernetes-bb5d5205fe02
+|
 
-
-Blogs
-https://blog.openshift.com/mongodb-kubernetes-operator/
-
-https://www.mongodb.com/blog/post/introducing-mongodb-enterprise-operator-for-kubernetes-openshift
-
-https://hackernoon.com/getting-started-with-mongodb-enterprise-operator-for-kubernetes-bb5d5205fe02
 
 
 
