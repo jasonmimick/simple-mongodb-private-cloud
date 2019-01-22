@@ -5,7 +5,7 @@ MongoDB Kubernetes Operator*
 
 Table of Contents
 ===
-[Introduction](#introduction)
+[The MongoDB Operator](#the-mongodb-operator)
 
 [History](#history)
 
@@ -27,16 +27,30 @@ Table of Contents
 
 Index
 
-## Introduction
+## The MongoDB Operator
 
-[intro]
+The MongoDB Kubernetes Operator is designed to work in conjuction with MongoDB
+Ops Manager](http://), which is a database cluster management system with many
+features. The automation functionality of Ops Manager is used by the MongoDB
+Operator to create and control database runtimes. These runtimes are, of course,
+within containers running inside Pods on Worker Nodes within a Kubernetes
+cluster. MongoDB Ops Manager can be installed both within or outside of the
+given Kubernetes cluster or a completely cloud-based version [Cloud
+Manager](https://cloud.mongodb.com) can be used.
 
-## History
-[MongoDB, Containers, Orchestration Platforms, Product Strategy]
+The MongoDB Operator consists of a set of custom resource definitions
+([CRDs](http://foo)), two container images, and a set of YAML artifacts. A
+custom resource is defined for stand alone, replica-set, and sharded cluster
+type MongoDB deployments. 
 
+The MongoDB Operator ships two Docker images one for the operator itself and one
+for the database runtime. The db runtime image contains the MongoDB Automation
+Agent binaries, and it is this process which is practically[^1] the main process for
+the database container.
 
-## Design
-[OpsMgr/K8s/principles]
+[^1]: Practically, since technically the container runs a `supervisord` process
+which watches the `automation-agent` process. This is it facilitate agent
+upgrades without the container getting killed.
 
 ## Getting Started
 
