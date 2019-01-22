@@ -457,16 +457,12 @@ kubectl delete pod {dnstester,mongo-test}
 
 | What | Where |
 | ---- | ----- |
-| Source repository for mdb-k8s-op artifacts |
-https://github.com/mongodb/mongodb-enterprise-kubernetes |
+| Source repository for mdb-k8s-op artifacts | https://github.com/mongodb/mongodb-enterprise-kubernetes |
 | Container repository with mdb-k8s operator images | https://quay.io/organization/mongodb |
-| Official Installation Documentation |
-https://docs.opsmanager.mongodb.com/current/tutorial/install-k8s-operator/ |
-| Troubleshooting |
-https://docs.opsmanager.mongodb.com/current/reference/troubleshooting/k8s/ |
+| Official Installation Documentation | https://docs.opsmanager.mongodb.com/current/tutorial/install-k8s-operator/ |
+| Troubleshooting | https://docs.opsmanager.mongodb.com/current/reference/troubleshooting/k8s/ |
 | Webinars | <TODO> |
-| Blogs |
-https://blog.openshift.com/mongodb-kubernetes-operator/<br/>https://www.mongodb.com/blog/post/introducing-mongodb-enterprise-operator-for-kubernetes-openshift<br/>https://hackernoon.com/getting-started-with-mongodb-enterprise-operator-for-kubernetes-bb5d5205fe02
+| Blogs | https://blog.openshift.com/mongodb-kubernetes-operator/<br/>https://www.mongodb.com/blog/post/introducing-mongodb-enterprise-operator-for-kubernetes-openshift<br/>https://hackernoon.com/getting-started-with-mongodb-enterprise-operator-for-kubernetes-bb5d5205fe02
 |
 
 
