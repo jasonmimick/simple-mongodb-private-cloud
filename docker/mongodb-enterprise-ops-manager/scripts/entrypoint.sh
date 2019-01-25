@@ -57,7 +57,12 @@ if [ ! -z "${OM_HOST}" ] &&  [ -z "${SKIP_OPS_MANAGER_REGISTRATION}" ]; then
     # if we fail here it might be because we already initialized this image, no need to do it again.
     # Also, make sure the ".ops-manager-env" file resides in a directory that is restored after a restart of the Pod
     # like a PersistentVolume, or this file won't be found
-    OM_ENV_FILE="/opt/mongodb/mms/env/.ops-manager-env"
+    OM_ENV_FILE_PATH="/opt/mongodb/mms/env"
+    OM_ENV_FILE="${OM_ENV_FILE_PATH}/.ops-manager-env"
+    mkdir -p ${OM_ENV_FILE_PATH}
+    echo "[$(date -u +'%Y-%m-%dT%H:%M:%SZ')]: Created path: ${OM_ENV_FILE_PATH}"
+    echo "[$(date -u +'%Y-%m-%dT%H:%M:%SZ')]: ls -l ${OM_ENV_FILE_PATH}: $(ls -l ${OM_ENV_FILE_PATH})"
+    OM_ENV_FILE="${OM_ENV_FILE_PATH}/.ops-manager-env"
     echo "[$(date -u +'%Y-%m-%dT%H:%M:%SZ')]: Credentials to be stored in ${OM_ENV_FILE}"
     echo "OM_HOST=${OM_HOST}"
     /opt/scripts/configure-ops-manager.py "http://${OM_HOST}:${OM_PORT}" "${OM_ENV_FILE}" || true
@@ -65,6 +70,26 @@ if [ ! -z "${OM_HOST}" ] &&  [ -z "${SKIP_OPS_MANAGER_REGISTRATION}" ]; then
 fi
 echo "[$(date -u +'%Y-%m-%dT%H:%M:%SZ')]: Ops Manager ready..."
 
+echo "[$(date -u +'%Y-%m-%dT%H:%M:%SZ')]: Pausing, for a brief station identification...."
+sleep 2
+echo "[$(date -u +'%Y-%m-%dT%H:%M:%SZ')]: This is WMDB, your station for more automation!"
+
 # Tail all Ops Manager and MongoD log files
 #tail -F "${log_dir}/mms0.log" "${log_dir}/mms0-startup.log" "${log_dir}/daemon.log" "${log_dir}/daemon-startup.log" "${log_dir}/mongod-appdb.log" "${log_dir}/mongod-backup.log"
-tail -f "${log_dir}/*.log" "/opt/mongodb/mms/logs/*.log"
+#tail -f "${log_dir}/*.log" "/opt/mongodb/mms/logs/*.log"
+
+echo "[$(date -u +'%Y-%m-%dT%H:%M:%SZ')]: ls -l ${log_dir}"
+ls -l ${log_dir}
+ls -l /opt/mongodb/mms
+ls -l /opt/mongodb/mms/logs
+
+#See https://github.com/kost/docker-alpine/issues/3
+#tail -F with * wildcard doesn't work
+#tail -F "${log_dir}/*.log" "/opt/mongodb/mms/logs/*.log"
+logs=""
+for log in $(ls ${log_dir}/*.log); do logs="${logs} ${log}"; done
+for log in $(ls /opt/mongodb/mms/logs/*.log); do logs="${logs} ${log}"; done
+echo "[$(date -u +'%Y-%m-%dT%H:%M:%SZ')]: About to tail logs='${logs}'"
+tail -F ${logs}
+
+

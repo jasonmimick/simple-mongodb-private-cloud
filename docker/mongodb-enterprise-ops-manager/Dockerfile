@@ -35,7 +35,9 @@ RUN apt-get -qq update \
         sudo \
     && apt-get -qq -yt testing install \
         python3-venv \
+        python3.6-venv \
         python3.6 \
+        python3-pip \
     && apt-get upgrade -y -qq \
     && apt-get dist-upgrade -y -qq \
     && rm -rf /var/lib/apt/lists/*

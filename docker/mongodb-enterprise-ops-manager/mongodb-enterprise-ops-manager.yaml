@@ -43,8 +43,8 @@ spec:
           httpGet:
             port: 8080
             path: /
-          initialDelaySeconds: 30
-          timeoutSeconds: 1
+          initialDelaySeconds: 600
+          timeoutSeconds: 10
         env:
         - name: OM_HOST
           value: ops-manager.mongodb.svc.cluster.local

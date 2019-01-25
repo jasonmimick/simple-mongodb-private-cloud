@@ -489,14 +489,10 @@ clean up testing pods:
 kubectl delete pod {dnstester,mongo-test}
 ```
 
-### GCE
-
 ## Production Notes
 [inject general production notes, deployment blueprints]
 
-### Prod notes
-
-#### Using existing Persistent Volumes for MongoDB deployments
+### Using existing Persistent Volumes for MongoDB deployments
 
 By default, the Operator will dynamically generate a Persistent Volume Claim
 (PVC) for each MongoDB database pod. This allows the storage for your MongoDB
@@ -561,7 +557,43 @@ Also see:
 
 ## Containerizing MongoDB Ops Manager
 
+Currently MongoDB Ops Manager is not generally available in a pre-built
+containerized format, but such functionality is on the current MongoDB product
+roadmap and expected to be released mid-2019. Containerizing MongoDB Ops Manager
+is not an easy task since it's designed to be a scalable distributed system.
+MongoDB Ops Manager users deploy the system in a staggering number of ways. Thus
+selecting a set of deployment options (for example, backup storage and access
+options) which work for all users is not easy.
 
+While waiting for a production-ready containerized version of MongoDB Ops
+Manager we'll present a simplified version suiteable _only_ for testing and
+development purposes. Do not use this demonstration software in any kind of
+production setting. 
+
+### Demo - Deploying Ops Manager into GCE Cluster
+
+```bash
+$# 'custom-2-12288' means worker nodes with 2 CPUS and 12Gi RAM
+$# See: https://cloud.google.com/sdk/gcloud/reference/container/clusters/create
+$gcloud container clusters create hello-mongo-kube --zone us-east1-c --machine-type custom-2-12288
+```
+
+
+For public access we need to create a public ip for the cluster:
+
+```bash
+gcloud compute addresses create opsmgr-ip --region us-east1
+```
+
+kubectl create -f simple-mongodb-private-cloud.yaml
+
+then, edit the yaml
+```yaml
+spec:
+  type: LoadBalancer
+  loadBalancerIP: 35.231.78.17
+```
+ 
 ## Resources
 
 
