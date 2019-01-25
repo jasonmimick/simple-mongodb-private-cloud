@@ -505,8 +505,10 @@ given MongoDB deployment yaml allows one to configure the details on the PVC's
 created by the operator. For example, consider the following snippet:
 
 ```yaml
-  podSpec:
-    storage: 20G
+spec:
+  ...
+  podSepc:
+    storage: 20Gi
     storageClass: dbproduction
 ```
 
@@ -517,8 +519,35 @@ deploying a MongoDB cluster. Note, there is usually a default storage class
 which can be used. To do so, simply omit any reference to the storage class in
 the `podSpec` and persistent volume definition.
 
-See [Create a Persistent
-Volume](https://kubernetes.io/docs/tasks/configure-pod-container/configure-persistent-volume-storage/#create-a-persistentvolume). 
+Here is a more complicated example which configures different PVC's for each
+type of storage per MongoDB container, data, logs, and
+[journal](https://docs.mongodb.com/manual/core/journaling/). Note the additional
+use of a `labelSelctor` for the journal mount.
+
+```yaml
+spec:
+  ...
+  podSpec:
+    persistence:
+      multiple:
+        data:
+          storage: 10Gi
+        journal:
+          storage: 1Gi
+          labelSelector:
+            matchLabels:
+              app: "my-app"
+        logs:
+          storage: 500M
+          storageClass: standard
+```
+
+
+Also see:
+- [Create a Persistent Volume](https://kubernetes.io/docs/tasks/configure-pod-container/configure-persistent-volume-storage/#create-a-persistentvolume). 
+
+- [samples/extended/replica-set.yaml](https://github.com/mongodb/mongodb-enterprise-kubernetes/blob/1d00e0da57f2d9f6ce4c4cda9f41cfaa95df4998/samples/extended/replica-set.yaml#L28)
+
 
 ### Deployment Blueprints
 
