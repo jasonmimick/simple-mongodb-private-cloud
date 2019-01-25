@@ -61,19 +61,12 @@ and easy ways to get Kubernetes up and running: minikube and GCE (Google
 Container Engine). But, the overall steps are similar for other Kubernetes
 distributions or cloud-based services.
 
-### minikube
-
-minikube is a single VM-based Kubernetes distribution which you typically run
-directly on your own computer. It is widely used for development and testing
-purposes, and ideally suited for your first foray into learning about running
-MongoDB and Kubernetes together.
-
 For both getting started options, we'll use MongoDB Cloud Manager. See
 Containerizing MongoDB Ops Manager for information on running Ops Manager within
-your Kubernetes cluster. Apart from needing to first instal MongoDB Ops Manager,
+your Kubernetes cluster. Apart from needing to first install MongoDB Ops Manager,
 the steps are identical.
 
-#### Download & Install Prerequisites
+### Download & Install Prerequisites
 
 Install minikube: https://kubernetes.io/docs/tasks/tools/install-minikube/
 
@@ -84,7 +77,7 @@ $# cd to directory you want to clone repository
 $git clone https://github.com/mongodb/mongodb-enterprise-kubernetes
 ```
 
-#### Configure MongoDB Cloud Manager
+### Configure MongoDB Cloud Manager
 
 1. Login or create an account at https://cloud.mongodb.com
 
@@ -100,9 +93,20 @@ https://docs.cloudmanager.mongodb.com/tutorial/manage-projects/#create-a-project
 Note down your project name, for demonstration purposes, we'll use
 hello-mongo-kube as our project name throughout this guide.
 
+
+_Choose one option!_ Minikube  - or - GCE
+
+### minikube
+
+minikube is a single VM-based Kubernetes distribution which you typically run
+directly on your own computer. It is widely used for development and testing
+purposes, and ideally suited for your first foray into learning about running
+MongoDB and Kubernetes together.
+
 #### Create minikube cluster
 
-A simple, default, cluster will work for this demonstration:
+[Install minikube](https://kubernetes.io/docs/tasks/tools/install-minikube/) and
+then simple, default, cluster will work for this demonstration:
 
 ```bash
 ➜  minikube version
@@ -129,6 +133,44 @@ kubelet: Running
 apiserver: Running
 kubectl: Correctly Configured: pointing to minikube-vm at 192.168.99.100
 ```
+### GCE
+
+Full details on getting setup with Google Container Engine are beyond the scope
+of this note, so please use your appropriate Google-fu and figure that out. We'l
+assume you've got the `glcoud` command line tool installed, you're logged in,
+you've got a project with Kubernetes Engine API enabled, and you see something
+similar to the following (the important thing being there be no cluster called
+`hello-mongo-kube`).
+
+```bash
+➜  ~ gcloud container clusters list
+➜  ~
+```
+
+First, let's spin up a cluster.
+
+```bash
+➜  ~ gcloud container clusters create hello-mongo-kube --zone us-east1-c
+Creating cluster hello-mongo-kube in us-east1-c... Cluster is being deployed...⠏
+Cluster is being health-checked (master is healthy)...done.
+Created [https://container.googleapis.com/v1/projects/federate-foo/zones/us-east1-c/clusters/hello-mongo-kube].
+To inspect the contents of your cluster, go to: https://console.cloud.google.com/kubernetes/workload_/gcloud/us-east1-c/hello-mongo-kube?project=federate-foo
+kubeconfig entry generated for hello-mongo-kube.
+NAME              LOCATION    MASTER_VERSION  MASTER_IP        MACHINE_TYPE   NODE_VERSION  NUM_NODES  STATUS
+hello-mongo-kube  us-east1-c  1.10.9-gke.5    104.196.210.140  n1-standard-1  1.10.9-gke.5  3          RUNNING
+```
+Oh, that's it. Continue on to the next step.
+
+_NOTE_ If you hit RBAC errors when trying to install the operator in a later
+step you can create the appropriate `clusterrole` for your GCE user. You can do
+this step now, or come back later when (or if) you hit the error.
+
+```bash
+➜  kubectl create clusterrolebinding me-cluster-admin-binding --clusterrole=cluster-admin --user=$(gcloud config get-value core/account)
+```
+
+### Setting up the MongoDB Operator
+
 
 Let's check and make sure the kubectl command is working properly:
 
@@ -451,7 +493,32 @@ kubectl delete pod {dnstester,mongo-test}
 
 ## Production Notes
 [inject general production notes, deployment blueprints]
+
 ### Prod notes
+
+#### Using existing Persistent Volumes for MongoDB deployments
+
+By default, the Operator will dynamically generate a Persistent Volume Claim
+(PVC) for each MongoDB database pod. This allows the storage for your MongoDB
+deployments to be managed in a standard Kubernetes-way. The `podSpec` field in a
+given MongoDB deployment yaml allows one to configure the details on the PVC's
+created by the operator. For example, consider the following snippet:
+
+```yaml
+  podSpec:
+    storage: 20G
+    storageClass: dbproduction
+```
+
+This will add a request of 20 gigabytes of storage from the "dbproduction"
+storage class provider. Cluster admins should pre-provision PersistentVolumes
+of the correct storage class which sasisify the storage requirements prior to
+deploying a MongoDB cluster. Note, there is usually a default storage class
+which can be used. To do so, simply omit any reference to the storage class in
+the `podSpec` and persistent volume definition.
+
+See [Create a Persistent
+Volume](https://kubernetes.io/docs/tasks/configure-pod-container/configure-persistent-volume-storage/#create-a-persistentvolume). 
 
 ### Deployment Blueprints
 
