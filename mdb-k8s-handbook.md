@@ -1,7 +1,6 @@
 # The MongoDB Kubernetes Handbook
 
-*A guide to the history, design, how to get started, and resources for the
-MongoDB Kubernetes Operator*
+*A guide to getting started and resources for the MongoDB Kubernetes Operator*
 
 Table of Contents
 ===
