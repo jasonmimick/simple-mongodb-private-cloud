@@ -577,22 +577,83 @@ $# See: https://cloud.google.com/sdk/gcloud/reference/container/clusters/create
 $gcloud container clusters create hello-mongo-kube --zone us-east1-c --machine-type custom-2-12288
 ```
 
-
 For public access we need to create a public ip for the cluster:
 
 ```bash
 gcloud compute addresses create opsmgr-ip --region us-east1
 ```
 
-kubectl create -f simple-mongodb-private-cloud.yaml
+*NOTE* Find the public IP for your GCE cluster with:
+```bash
+gcloud compute addresses list
+NAME       ADDRESS/RANGE  TYPE  PURPOSE  NETWORK  REGION    SUBNET  STATUS
+opsmgr-ip  35.231.78.17                           us-east1          RESERVED
+```
 
-then, edit the yaml
+To create an Ops Manager instance run the following, the second command will
+tail on the logs as it takes a few minutes to start up:
+
+```bash
+kubectl create -f https://raw.githubusercontent.com/jasonmimick/simple-mongodb-private-cloud/master/simple-mongodb-private-cloud.yaml
+kubectl logs -f mongodb-enterprise-ops-manager-0
+```
+
+We need to edit the Ops Manager Kubernetes service to link it up to the public
+ip address we just created. We can fetch the service definition yaml and edit.
+
+```
+kubectl edit svc ops-manager
+```
+
+Then change
 ```yaml
 spec:
+  ...
+  type: NodePort
+```
+to
+```yaml
+spec:
+  ...
   type: LoadBalancer
   loadBalancerIP: 35.231.78.17
 ```
  
+You'll need to wait a moment for the public ip to get bound. Follow the status
+with commands like:
+
+```bash
+kubectl get svc
+NAME          TYPE           CLUSTER-IP     EXTERNAL-IP   PORT(S)          AGE
+ops-manager   LoadBalancer   10.7.250.156   <pending>     8080:31586/TCP   19m
+```
+
+
+A global admin user for the test Ops Manager instance has already been
+provisioned. The credentails for this account have been written to a file within
+the ops-manager container. In order to inspect this information run,
+
+```bash
+kubectl exec -it mongodb-enterprise-ops-manager-0 cat /opt/mongodb/mms/env/.ops-manager-env
+```
+
+Your output should look similar to:
+```bash
+export OM_HOST=http://mongodb-enterprise-ops-manager-0.ops-manager.mongodb.svc.cluster.local:8080
+export OM_USER=admin
+export OM_PASSWORD=admin12345%
+export OM_API_KEY=d794585d-e0e2-40c3-bcfa-93455d742858
+```
+
+*NOTE*
+When cleaning up this deployment be sure to also delete the persistent volumes
+and persistent volume claims. Deleting the stateful set does not appear to also
+cleanup these resources consistently.
+
+```bash
+kubectl get pv,pvc
+```
+
 ## Resources
 
 
