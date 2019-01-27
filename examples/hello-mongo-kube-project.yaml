@@ -1,0 +1,10 @@
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: hello-mongo-kube
+  namespace: mongodb
+data:
+  projectName: hello-mongo-kube
+  baseUrl: https://cloud.mongodb.com
+
