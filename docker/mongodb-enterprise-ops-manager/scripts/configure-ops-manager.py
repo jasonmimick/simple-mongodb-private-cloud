@@ -51,7 +51,7 @@ if __name__ == '__main__':
     args = docopt.docopt(__doc__)
     url = args['OPS_MANAGER_HOST'].rstrip('/')
     filename = args['ENV_FILE']
-
+    print("url=%s filename=%s" % (url,filename) )
     # Internal Ops Manager hostname used by automation agents
     om_host = 'export OM_HOST={}'.format(url)
     print()

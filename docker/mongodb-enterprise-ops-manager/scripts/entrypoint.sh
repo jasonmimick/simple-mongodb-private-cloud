@@ -57,7 +57,7 @@ if [ ! -z "${OM_HOST}" ] &&  [ -z "${SKIP_OPS_MANAGER_REGISTRATION}" ]; then
     # if we fail here it might be because we already initialized this image, no need to do it again.
     # Also, make sure the ".ops-manager-env" file resides in a directory that is restored after a restart of the Pod
     # like a PersistentVolume, or this file won't be found
-    OM_ENV_FILE_PATH="/opt/mongodb/mms/env"
+    OM_ENV_FILE_PATH="/etc/mongodb/mms/env"
     OM_ENV_FILE="${OM_ENV_FILE_PATH}/.ops-manager-env"
     mkdir -p ${OM_ENV_FILE_PATH}
     echo "[$(date -u +'%Y-%m-%dT%H:%M:%SZ')]: Created path: ${OM_ENV_FILE_PATH}"
