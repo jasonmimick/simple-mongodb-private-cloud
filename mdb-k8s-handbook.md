@@ -4,11 +4,9 @@
 
 Table of Contents
 ===
+[Background](#Background)
+
 [The MongoDB Operator](#the-mongodb-operator)
-
-[History](#history)
-
-[Design](#design)
 
 [Getting Started](#getting-started)
 
@@ -26,16 +24,20 @@ Table of Contents
 
 Index
 
-## The MongoDB Operator
+## Background
+
+### MongoDB and Kubernetes
+
+### The MongoDB Operator
 
 The MongoDB Kubernetes Operator is designed to work in conjuction with MongoDB
-Ops Manager](http://), which is a database cluster management system with many
-features. The automation functionality of Ops Manager is used by the MongoDB
-Operator to create and control database runtimes. These runtimes are, of course,
-within containers running inside Pods on Worker Nodes within a Kubernetes
-cluster. MongoDB Ops Manager can be installed both within or outside of the
-given Kubernetes cluster or a completely cloud-based version [Cloud
-Manager](https://cloud.mongodb.com) can be used.
+Ops Manager](https://www.mongodb.com/products/ops-manager), a database cluster
+management system with many features. The automation functionality of Ops
+Manager is used by the MongoDB Operator to create and control database runtimes.
+These runtimes are, of course, within containers running inside Pods on Worker
+Nodes within a Kubernetes cluster. MongoDB Ops Manager can be installed both
+within or outside of the given Kubernetes cluster or a completely cloud-based
+version [Cloud Manager](https://cloud.mongodb.com) can be used.
 
 The MongoDB Operator consists of a set of custom resource definitions
 ([CRDs](http://foo)), two container images, and a set of YAML artifacts. A
@@ -628,7 +630,6 @@ NAME          TYPE           CLUSTER-IP     EXTERNAL-IP   PORT(S)          AGE
 ops-manager   LoadBalancer   10.7.250.156   <pending>     8080:31586/TCP   19m
 ```
 
-
 A global admin user for the test Ops Manager instance has already been
 provisioned. The credentails for this account have been written to a file within
 the ops-manager container. In order to inspect this information run,
@@ -645,17 +646,30 @@ export OM_PASSWORD=admin12345%
 export OM_API_KEY=d794585d-e0e2-40c3-bcfa-93455d742858
 ```
 
-*NOTE*
+You should now be able to login to this Ops Manager instance at
+`http://<GPC-public-ip>:8080` with the credentials above. You can now proceed as
+usual using Ops Manager, bearing in mind this is only a testing and evaluation
+deployment and not at all suited to anything near production workloads.
+
+_NOTE_
 When cleaning up this deployment be sure to also delete the persistent volumes
 and persistent volume claims. Deleting the stateful set does not appear to also
 cleanup these resources consistently.
 
 ```bash
-kubectl get pv,pvc
+➜  kubectl get pvc --selector=app=mongodb-enterprise-ops-manager
+NAME                                                  STATUS   VOLUME                                     CAPACITY   ACCESS MODES   STORAGECLASS   AGE
+mongodb-mms-config-mongodb-enterprise-ops-manager-0   Bound    pvc-b20db3d3-217b-11e9-b1be-42010a8e013b   1Gi        RWO            standard       1d
+mongodb-mms-data-mongodb-enterprise-ops-manager-0     Bound    pvc-b20c6e93-217b-11e9-b1be-42010a8e013b   20Gi       RWO            standard       1d
+➜  kubectl delete --wait=false pvc --selector=app=mongodb-enterprise-ops-manager
+persistentvolumeclaim "mongodb-mms-config-mongodb-enterprise-ops-manager-0" deleted
+persistentvolumeclaim "mongodb-mms-data-mongodb-enterprise-ops-manager-0" deleted
 ```
 
 ## Resources
 
+This is a collection of various resources for more information on MongoDB and
+Kubernetes.
 
 | What | Where |
 | ---- | ----- |
