@@ -16,6 +16,7 @@ import json
 import urllib
 from urllib import request
 from os.path import basename, exists
+import os
 import sys
 
 import docopt
@@ -27,7 +28,7 @@ DEFAULT_ADMIN='admin'
 DEFAULT_PASS='admin12345%'
 
 def post(om_url, data, username=None, token=None):
-    print("post() om_url=%s",om_url)
+    print("post() om_url=%s" % om_url)
     data = bytes(json.dumps(data), encoding='utf-8')
     req = request.Request(om_url, data)
     req.add_header('Content-Type', 'application/json')
@@ -56,6 +57,7 @@ if __name__ == '__main__':
     om_host = 'export OM_HOST={}'.format(url)
     print()
     print("om_host=%s",om_host)
+    print("listdir(%s): %s" % ( filename, os.listdir(os.path.dirname(filename) ) ) )
     # If the env vars have already been configured (global admin was registered)
     if exists(filename):
         print()
@@ -72,7 +74,8 @@ if __name__ == '__main__':
 
         # Stop here, as the global admin cannot be registered more than once
         sys.exit(0)
-
+    else:
+       print(" %s did not exist!" % filename)
     # Create first user (global owner)
     user_data = post(url + "/api/public/v1.0/unauth/users?whitelist=0.0.0.0%2F0", {
         "username": DEFAULT_ADMIN,

@@ -28,6 +28,24 @@ Index
 
 ### MongoDB and Kubernetes
 
+MongoDB runs perfectly fine within containerized environments. That is, of
+course, assuming you know persicly what you're doing. Meaning, you understand
+the performance requirements of your use of MongoDB and the run-time
+environments are sized accordingly. This handbook doesn't focus on figuring out
+just what those settings are for your use-case, there are numerous guides and
+resources on that topic. Rather, we'll focus on how to apply those
+best-practices into containerized environments for MongoDB, especially
+Kubernetes.
+
+Since the dawn of Linux namespaces and cgroups MongoDB users have hand-crafted
+production-quality deployments of MongoDB using these technologies. This
+continued with 10 million+ downloads of the "official" `mongo`
+[image](https://hub.docker.com/_/mongo) on DockerHub and numerous other open
+source containerizations of MongoDB. This handbook adds to the landscape,
+providing a comphrehensive go-to resource focused on the truly "official" Kubernetes
+integration built and supported by [MongoDB,
+Inc.](https://finance.yahoo.com/quote/MDB/).
+
 ### The MongoDB Operator
 
 The MongoDB Kubernetes Operator is designed to work in conjuction with MongoDB
@@ -493,6 +511,28 @@ kubectl delete pod {dnstester,mongo-test}
 ## Production Notes
 [inject general production notes, deployment blueprints]
 
+### Configuring MongoDB memory use
+
+The amount of memory used by a containerized MongoDB node has a couple of
+configuration points. Each `mongod` pod can request a certain amount of memory
+through the `podSpec` attribute in the database deployment definition:
+
+```yaml
+podSpec:
+  memory: 2Gi
+```
+
+You can also specify the maximum amount of ram for a database's internal memory
+cache. This is controlled through the
+`[wiredTigerCacheSizeGB](https://docs.mongodb.com/manual/reference/program/mongod/#cmdoption-wiredtigercachesizegb)` MongoDB
+configuration parameter. You can control this setting from the Ops Manager user
+interface.
+
+> >  In a containerised environment it is absolutely vital to explicitly state this value. If this is not done, and multiple containers end up running on the same host machine (node), MongoDB's WiredTiger storage engine may attempt to take more memory than it should. This is because of the way a container "reports" it's memory size to running processes. As per the MongoDB Production Recommendations, the default cache size guidance is: "50% of RAM minus 1 GB, or 256 MB". Given that the amount of memory requested is 2GB, the WiredTiger cache size here, has been set to 256MB.
+> > [reference](http://pauldone.blogspot.com/2017/06/mongodb-kubernetes-production-settings.html)
+
+TODO: Example snippet showing doing this through the Ops Mgr API
+
 ### Using existing Persistent Volumes for MongoDB deployments
 
 By default, the Operator will dynamically generate a Persistent Volume Claim
@@ -678,7 +718,8 @@ Kubernetes.
 | Official Installation Documentation | https://docs.opsmanager.mongodb.com/current/tutorial/install-k8s-operator/ |
 | Troubleshooting | https://docs.opsmanager.mongodb.com/current/reference/troubleshooting/k8s/ |
 | Webinars | <TODO> |
-| Blogs | https://blog.openshift.com/mongodb-kubernetes-operator/<br/>https://www.mongodb.com/blog/post/introducing-mongodb-enterprise-operator-for-kubernetes-openshift<br/>https://hackernoon.com/getting-started-with-mongodb-enterprise-operator-for-kubernetes-bb5d5205fe02
+| Blogs |
+https://blog.openshift.com/mongodb-kubernetes-operator/<br/>https://www.mongodb.com/blog/post/introducing-mongodb-enterprise-operator-for-kubernetes-openshift<br/>https://hackernoon.com/getting-started-with-mongodb-enterprise-operator-for-kubernetes-bb5d5205fe02<br/>http://pauldone.blogspot.com/2017/06/mongodb-kubernetes-production-settings.html
 |
 
 
