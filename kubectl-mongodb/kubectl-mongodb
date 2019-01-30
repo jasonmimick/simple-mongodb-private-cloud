@@ -372,7 +372,6 @@ passwd	     - Change a users password
   def shell(self):
     #print("shell command")
     desc="""Start a Mongo shell. Call with eval, like\n 
-
 $eval $(kubectl mongodb shell --service my-replica-set-svc)
 """
     args = self.__get_args(desc, [ '--service', '--namespace', '--srv'])

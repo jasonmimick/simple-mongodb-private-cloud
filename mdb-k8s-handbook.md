@@ -48,28 +48,28 @@ Inc.](https://finance.yahoo.com/quote/MDB/).
 
 ### The MongoDB Operator
 
-The MongoDB Kubernetes Operator is designed to work in conjuction with MongoDB
+The MongoDB Kubernetes Operator is designed to work in conjuction with [MongoDB
 Ops Manager](https://www.mongodb.com/products/ops-manager), a database cluster
 management system with many features. The automation functionality of Ops
 Manager is used by the MongoDB Operator to create and control database runtimes.
-These runtimes are, of course, within containers running inside Pods on Worker
-Nodes within a Kubernetes cluster. MongoDB Ops Manager can be installed both
-within or outside of the given Kubernetes cluster or a completely cloud-based
-version [Cloud Manager](https://cloud.mongodb.com) can be used.
+These runtimes are within containers running inside Pods, within StatefulSets,
+on Worker Nodes in a Kubernetes cluster. MongoDB Ops Manager can be installed
+both within or outside of the given Kubernetes cluster or a completely
+cloud-based version [Cloud Manager](https://cloud.mongodb.com) can be used.
 
 The MongoDB Operator consists of a set of custom resource definitions
-([CRDs](http://foo)), two container images, and a set of YAML artifacts. A
-custom resource is defined for stand alone, replica-set, and sharded cluster
-type MongoDB deployments. 
+[CRDs](https://kubernetes.io/docs/concepts/extend-kubernetes/api-extension/custom-resources/),
+two container images, and a set of YAML artifacts. A custom resource is defined
+for stand alone, replica-set, and sharded cluster type MongoDB deployments. 
 
 The MongoDB Operator ships two Docker images one for the operator itself and one
 for the database runtime. The db runtime image contains the MongoDB Automation
-Agent binaries, and it is this process which is practically<sup>1</sup> the main process for
-the database container.
+Agent binaries, and it is this process which is practically<sup>1</sup> the main
+process for the database container.
 
-<sup>1</sup> *Practically*, since technically the container runs a `supervisord` process
-which watches the `automation-agent` process. This is done to facilitate agent
-upgrades without the container getting killed.
+<sup>1</sup> *Practically*, since technically the container runs a `supervisord`
+process which watches the `automation-agent` process. This is done to facilitate
+agent upgrades without the container getting killed.
 
 ## Getting Started
 
@@ -665,9 +665,10 @@ You'll need to wait a moment for the public ip to get bound. Follow the status
 with commands like:
 
 ```bash
-kubectl get svc
+kubectl get svc --watch
 NAME          TYPE           CLUSTER-IP     EXTERNAL-IP   PORT(S)          AGE
-ops-manager   LoadBalancer   10.7.250.156   <pending>     8080:31586/TCP   19m
+ops-manager   LoadBalancer   10.7.250.156   <pending>     8080:31586/TCP   7m30s
+ops-manager   LoadBalancer   10.7.245.203   35.231.78.17   8080:32059/TCP   8m12s
 ```
 
 A global admin user for the test Ops Manager instance has already been
@@ -690,6 +691,10 @@ You should now be able to login to this Ops Manager instance at
 `http://<GPC-public-ip>:8080` with the credentials above. You can now proceed as
 usual using Ops Manager, bearing in mind this is only a testing and evaluation
 deployment and not at all suited to anything near production workloads.
+
+The public API whitelist for this Ops Manager instance has already been updated
+to allow access from any address (`0.0.0.0`). You can also grab the public api
+key from the file.
 
 _NOTE_
 When cleaning up this deployment be sure to also delete the persistent volumes
