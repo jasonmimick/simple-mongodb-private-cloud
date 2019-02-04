@@ -711,6 +711,19 @@ persistentvolumeclaim "mongodb-mms-config-mongodb-enterprise-ops-manager-0" dele
 persistentvolumeclaim "mongodb-mms-data-mongodb-enterprise-ops-manager-0" deleted
 ```
 
+### Demo - MongoDB Ops Manager in Azure container
+
+This example command launches a single container into Azure running a
+demonstration Docker image of MongoDB Ops Manager.
+
+Note: The `dns-name-label` value is used to pre-populate the `OM_HOST`
+environment variable. The image requires this variable to be set in order to
+function properly.
+
+```bash
+➜  az container create -g ops-manager-cloudfoundry --name ops-manager-cloudfoundry --image jmimick/mongodb-enterprise-ops-manager  --memory 12 --cpu 4 --environment-variables OM_HOST=ops-manager-cloudfoundry.eastus.azurecontainer.io --dns-name-label ops-manager-cloudfoundry --port 8080
+```
+
 ## Resources
 
 This is a collection of various resources for more information on MongoDB and

@@ -39,6 +39,9 @@ spec:
         imagePullPolicy: Always
         readinessProbe:
           httpGet:
+            httpHeaders:
+            - name: host
+              value: localhost
             port: 8080
             path: /user
           initialDelaySeconds: 90
