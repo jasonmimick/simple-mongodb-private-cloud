@@ -1,0 +1,30 @@
+---
+apiVersion: apps/v1beta1
+kind: Deployment
+metadata:
+  name: "spring-music"
+spec:
+  replicas: 4
+  minReadySeconds: 30
+  revisionHistoryLimit: 2
+  strategy:
+    rollingUpdate:
+      maxSurge: "25%"
+  template:
+    metadata:
+      labels:
+        app: "spring-music"
+    spec:
+      containers:
+      - name: "spring-music"
+        image: "jmimick/spring-music"
+        imagePullPolicy: "Always"
+        ports:
+          - name: http
+            containerPort: 8080
+        env:
+        - name: MONGODB_URI
+          valueFrom:
+            secretKeyRef:
+              name: spring-music-db
+              key: mongodburi 
