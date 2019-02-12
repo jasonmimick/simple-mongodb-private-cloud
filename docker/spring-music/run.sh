@@ -2,15 +2,16 @@
 if [ -z "$1" ]
   then
     if [ -z "${MONGODB_URI}" ]
-      echo "No MongoDB connection string specified. Pass as argument"
-      echo "Please use:"
-      echo "docker run jmimick/spring-music <MONGODB_CONNECTION_STRING>"
-      exit 1
+      then
+        echo "No MongoDB connection string specified. Pass as argument"
+        echo "Please use:"
+        echo "docker run jmimick/spring-music <MONGODB_CONNECTION_STRING>"
+        exit 1
     fi
-    then
     echo "No args, but detected env MONGODB_URI='${MONGODB_URI}'"
+  else 
+   MONGODB_URI=${1}
 fi
-MONGODB_URI=${1}
 
 echo "Launching Spring Music connecting to ${MONGODB_URI}"
 
