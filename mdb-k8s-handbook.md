@@ -732,6 +732,10 @@ provides a good example application. We can containerize and also "kube-ize"
 this app to use a Kubernetes secret to lookup the database service connection
 string.
 
+The `[jmimick/spring-music]()` docker image is build to automatically detect the
+`MONGODB_URI` environment variable and this is set through the deployment
+container spec yaml where a Kubernetes secret is injected into the env variable.
+ 
 To try this out, you just need to create a MongoDB db service, create a secret,
 and fire up the spring-music app.
 
