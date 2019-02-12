@@ -726,6 +726,10 @@ function properly.
 
 ### Demo - spring-music containerized
 
+Resources:
+[examples/spring-music.yaml](examples/spring-music.yaml)
+
+
 [Spring music](https://github.com/cloudfoundry-samples/spring-music) is a sample
 app which has been around awhile. It is build with Spring and Java, and so
 provides a good example application. We can containerize and also "kube-ize"
