@@ -6,10 +6,6 @@ metadata:
 spec:
   replicas: 2 
   minReadySeconds: 30
-  revisionHistoryLimit: 2
-  strategy:
-    rollingUpdate:
-      maxSurge: "25%"
   template:
     metadata:
       labels:
@@ -28,3 +24,20 @@ spec:
             secretKeyRef:
               name: spring-music-db
               key: mongodburi 
+---
+apiVersion: v1
+kind: Service
+metadata:
+  labels:
+    app: spring-music
+  name: spring-music
+spec:
+  ports:
+    port: 8080
+    protocol: TCP
+    targetPort: 8080
+  selector:
+    app: spring-music
+  sessionAffinity: None
+  type: LoadBalancer
+  loadBalancerIP: 35.231.78.17

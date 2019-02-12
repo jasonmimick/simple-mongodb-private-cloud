@@ -724,6 +724,81 @@ function properly.
 ➜  az container create -g ops-manager-cloudfoundry --name ops-manager-cloudfoundry --image jmimick/mongodb-enterprise-ops-manager  --memory 12 --cpu 4 --environment-variables OM_HOST=ops-manager-cloudfoundry.eastus.azurecontainer.io --dns-name-label ops-manager-cloudfoundry --port 8080
 ```
 
+### Demo - spring-music containerized
+
+[Spring music](https://github.com/cloudfoundry-samples/spring-music) is a sample
+app which has been around awhile. It is build with Spring and Java, and so
+provides a good example application. We can containerize and also "kube-ize"
+this app to use a Kubernetes secret to lookup the database service connection
+string.
+
+To try this out, you just need to create a MongoDB db service, create a secret,
+and fire up the spring-music app.
+
+```yaml
+---
+apiVersion: apps/v1beta1
+kind: Deployment
+metadata:
+  name: "spring-music"
+spec:
+  replicas: 2 
+  minReadySeconds: 30
+  revisionHistoryLimit: 2
+  strategy:
+    rollingUpdate:
+      maxSurge: "25%"
+  template:
+    metadata:
+      labels:
+        app: "spring-music"
+    spec:
+      containers:
+      - name: "spring-music"
+        image: "jmimick/spring-music"
+        imagePullPolicy: "Always"
+        ports:
+          - name: http
+            containerPort: 8080
+        env:
+        - name: MONGODB_URI
+          valueFrom:
+            secretKeyRef:
+              name: spring-music-db
+              key: mongodburi 
+```
+
+Create your secret with yaml or directly:
+
+```bash
+kubectl create secret generic spring-music-db
+--from-literal=mongodburi="mongodb://<user>:<pwd>@docker-shard-00-00-1cihx.gcp.mongodb.net:27017,docker-shard-00-01-1cihx.gcp.mongodb.net:27017,docker-shard-00-02-1cihx.gcp.mongodb.net:27017/admin?ssl=true&replicaSet=docker-shard-0&authSource=admin&retryWrites=true"
+```
+
+You can expose this app to the public internet. On GCE create an ipaddress and
+then edit the spring-music service `loadBalancerIP` to point to this new
+ipaddress.
+
+```yaml
+---
+apiVersion: v1
+kind: Service
+metadata:
+  labels:
+    app: spring-music
+  name: spring-music
+spec:
+  ports:
+    port: 8080
+    protocol: TCP
+    targetPort: 8080
+  selector:
+    app: spring-music
+  sessionAffinity: None
+  type: LoadBalancer
+  loadBalancerIP: 35.231.78.17
+```
+
 ## Resources
 
 This is a collection of various resources for more information on MongoDB and
