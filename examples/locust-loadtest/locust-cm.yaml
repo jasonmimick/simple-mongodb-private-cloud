@@ -1,0 +1,6 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: locust-cm
+data:
+  ATTACKED_HOST: http://35.231.78.17:8080

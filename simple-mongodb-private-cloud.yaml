@@ -7,11 +7,11 @@ spec:
   type: NodePort
   selector:
     app: mongodb-enterprise-ops-manager
+  type: LoadBalancer
   ports:
   - protocol: TCP
     port: 8080
     targetPort: 8080
-
 ---
 apiVersion: apps/v1
 kind: StatefulSet
