@@ -29,7 +29,7 @@ Index
 ### MongoDB and Kubernetes
 
 MongoDB runs perfectly fine within containerized environments. That is, of
-course, assuming you know persicly what you're doing. Meaning, you understand
+course, assuming you know precisely what you're doing. Meaning, you understand
 the performance requirements of your use of MongoDB and the run-time
 environments are sized accordingly. This handbook doesn't focus on figuring out
 just what those settings are for your use-case, there are numerous guides and
