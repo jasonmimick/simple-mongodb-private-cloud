@@ -2,7 +2,7 @@ FROM python:3.6.6-alpine3.7
 #FROM python:3.6-alpine
 EXPOSE 5000
 
-WORKDIR /mongodb-kuberenetes-broker
+WORKDIR /mongodb-kubernetes-broker
 
 COPY requirements.txt ./
 #RUN pip install --no-cache-dir -r requirements.txt

@@ -809,6 +809,19 @@ spec:
   loadBalancerIP: 35.231.78.17
 ```
 
+### The MongoDB Kubernetes Broker
+
+The Open Service Broker API is a great way for us to expose our dataservices in
+a consistent way for applications to consume. This section present an example
+implementation of a service broker designed to manage the MongoDB deployments
+withing your Kubernetes cluster. A similar approach can be use to expose MongoDB
+Atlas clusters for consumption.
+
+```bash
+k create secret generic mongodb-kubernetes-broker-credentials --from-literal=username=admin --from-literal=password=secret123
+```
+
+
 ## Resources
 
 This is a collection of various resources for more information on MongoDB and
