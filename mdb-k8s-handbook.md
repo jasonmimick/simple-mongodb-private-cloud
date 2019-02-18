@@ -820,8 +820,16 @@ Atlas clusters for consumption.
 ```bash
 k create secret generic mongodb-kubernetes-broker-credentials --from-literal=username=admin --from-literal=password=secret123
 ```
+#### Managing Database Credentials
 
+broker config 
+ConfigMap
+  uriTemplate: "mongodb://{username}:{password}@{host-port-list}/{authdb}?{options}"
 
+then the broker will create secrets with connection string instances for apps to
+consume.
+
+k create secret  
 ## Resources
 
 This is a collection of various resources for more information on MongoDB and
