@@ -1,0 +1,13 @@
+2019-02-21 17:50:15,407 CRIT Supervisor running as root (no user in config file)
+2019-02-21 17:50:15,408 INFO supervisord started with pid 1
+2019-02-21 17:50:16,414 INFO spawned: 'mongod' with pid 9
+2019-02-21 17:50:16,416 INFO spawned: 'broker' with pid 10
+Did not detect Kubernetes cluster. Running with default 'test/test' credentials
+ * Serving Flask app "broker" (lazy loading)
+ * Environment: production
+   WARNING: Do not use the development server in a production environment.
+   Use a production WSGI server instead.
+ * Debug mode: off
+21/02/2019 17:50:17 - INFO - werkzeug -  * Running on http://0.0.0.0:5000/ (Press CTRL+C to quit)
+2019-02-21 17:50:18,075 INFO success: mongod entered RUNNING state, process has stayed up for > than 1 seconds (startsecs)
+2019-02-21 17:50:18,075 INFO success: broker entered RUNNING state, process has stayed up for > than 1 seconds (startsecs)

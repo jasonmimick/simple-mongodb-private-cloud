@@ -1,1 +1,4 @@
 openbrokerapi==3.2.5
+Jinja2
+kubernetes
+pyyaml

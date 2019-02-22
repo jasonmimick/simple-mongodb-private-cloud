@@ -17,9 +17,14 @@ from openbrokerapi.catalog import (
     ServicePlan,
 )
 
+#from broker import HTTPException
+
 # interface for services
 class OSBMDBService(object, metaclass=abc.ABCMeta):
   
+  def __init__(self, logger):
+    self.logger = logger
+
   @abc.abstractmethod
   def plans(self) -> List[ServicePlan]:
     pass  

@@ -20,20 +20,38 @@ from openbrokerapi.service_broker import (
     Service,
     LastOperation)
 import os
-from services import service, kubernetes, atlas
+from services import service, kubernetes, atlas, devops
 
 logger = logging.getLogger(__name__)
 
+from flask import jsonify
 
-class MongoDBKubernetesBroker(ServiceBroker):
+class HTTPException(Exception):
+    status_code = 400
+
+    def __init__(self, message, status_code=None, payload=None):
+        Exception.__init__(self)
+        self.message = message
+        if status_code is not None:
+            self.status_code = status_code
+        self.payload = payload
+
+    def to_dict(self):
+        rv = dict(self.payload or ())
+        rv['message'] = self.message
+        return rv
+
+
+class MongoDBOpenServiceBroker(ServiceBroker):
 
     def __init__(self):
- 
-
       self.service_providers = {}
-      self.service_providers['kubernetes']=kubernetes.KubernetesService()
-      #service_providers['atlas']=atlas.AtlasService()
+      self.service_providers['devops']=devops.DevOpsService(logger)
+      self.service_providers['kubernetes']=kubernetes.KubernetesService(logger)
+      #service_providers['atlas']=atlas.AtlasService(logger)
       self.service_plans = {}
+
+
 
     def catalog(self) -> Service:
       # We should add the ability to inject the service plans
@@ -58,7 +76,7 @@ class MongoDBKubernetesBroker(ServiceBroker):
             description='This service creates and provides your applications access to MongoDB services.',
             bindable=True,
             plans=plans,
-            tags=tags,
+            tags=list(set(tags)),
             plan_updateable=False,
       )
       return catalog
@@ -91,10 +109,16 @@ class MongoDBKubernetesBroker(ServiceBroker):
 
 def create_broker_blueprint(credentials: api.BrokerCredentials):
     logger.info("create_broker_blueprint: credentials: %s %s" % (credentials.username, credentials.password))
-    return api.get_blueprint(MongoDBKubernetesBroker(), credentials, logger)
+    return api.get_blueprint(MongoDBOpenServiceBroker(), credentials, logger)
 
 app = Flask(__name__)
 logger = basic_config()  # Use root logger with a basic configuration provided by openbrokerapi.log_utils
+
+@app.errorhandler(HTTPException)
+def handle_invalid_usage(error):
+  response = jsonify(error.to_dict())
+  response.status_code = error.status_code
+  return response
 
 # If we're running inside a kubernetes cluster, then we expect the credentials for
 # the broker to be in a file mounted from a secret.
@@ -110,6 +134,6 @@ else:
   print("Did not detect Kubernetes cluster. Running with default 'test/test' credentials")
   username = "test"
   password = "test"
-openbroker_bp = api.get_blueprint(MongoDBKubernetesBroker(), api.BrokerCredentials(username,password), logger)
+openbroker_bp = api.get_blueprint(MongoDBOpenServiceBroker(), api.BrokerCredentials(username,password), logger)
 app.register_blueprint(openbroker_bp)
 app.run("0.0.0.0")

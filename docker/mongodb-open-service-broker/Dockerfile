@@ -7,7 +7,7 @@ LABEL source="https://github.com/jasonmimick/simple-mongodb-private-cloud"
 
 
 COPY requirements.txt ./
-RUN apk --update add build-base supervisor mongodb
+RUN apk --update add build-base openssl-dev libffi-dev supervisor mongodb
 RUN pip install --upgrade pip
 RUN pip install -r requirements.txt
 
