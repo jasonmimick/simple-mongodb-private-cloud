@@ -1,0 +1,16 @@
+{
+  "service_id": "mongodb-open-service-broker",
+  "plan_id": "hello-mongodb-kubernetes-operator",
+  "context": {
+    "platform": "x86_64",
+    "version": "4.0",
+    "namespace": "foobar"
+  },
+  "organization_guid": "org-guid-here",
+  "space_guid": "space-guid-here",
+  "parameters": {
+    "globalAdminUserName": "admin",
+    "globalAdminPassword": "password12345%",
+    "port"               : 8182
+  }
+}

@@ -1,4 +1,5 @@
 import os
+import re
 import abc
 from typing import List
 from pprint import pprint
@@ -101,7 +102,7 @@ class KubeHelper():
     return resp
 
   @staticmethod
-  def utils_create_from_yaml(k8s_client, yaml_file, verbose=False):
+  def utils_create_from_yaml(k8s_client, yaml_file, verbose=False, **kwargs):
     yml_object = yaml.load(yaml.dump(yaml_file))
     # TODO: case of yaml file containing multiple objects
     group, _, version = yml_object["apiVersion"].partition("/")
@@ -110,13 +111,32 @@ class KubeHelper():
       group = "core"
     # Take care for the case e.g. api_type is "apiextensions.k8s.io"
     # Only replace the last instance
+    print("-1 --> group: %s" % group)
     group = "".join(group.rsplit(".k8s.io", 1))
-    fcn_to_call = "{0}{1}Api".format(group.capitalize(),version.capitalize())
+    print("0 --> group: %s" % group)
+    if len(group.split('.'))>1:
+      if verbose:
+        print("Found API group with multiple dots")
+      g2 = ""
+      g3 = group.split('.')
+      print("g3=%s" % g3)
+      for xx in g3:
+        print("-----> xx=%s" % xx)
+        g2+=xx.capitalize()
+      print("g2=%s" % g2)
+      fcn_to_call = "{0}{1}Api".format(g2, version.capitalize())
+    else:
+      fcn_to_call = "{0}{1}Api".format(group.capitalize(),version.capitalize())
+    if verbose:
+      print("fcn_to_call=%s" % fcn_to_call)
     k8s_api = getattr(client, fcn_to_call)(k8s_client)
     # Replace CamelCased action_type into snake_case
     kind = yml_object["kind"]
+    print("1 --> kind: %s" % kind)
     kind = re.sub('(.)([A-Z][a-z]+)', r'\1_\2', kind)
+    print("2 --> kind: %s" % kind)
     kind = re.sub('([a-z0-9])([A-Z])', r'\1_\2', kind).lower()
+    print("3 --> kind: %s" % kind)
     # Decide which namespace we are going to put the object in,
     # if any
     if "namespace" in yml_object["metadata"]:
@@ -129,7 +149,7 @@ class KubeHelper():
     else:
       resp = getattr(k8s_api, "create_{0}".format(kind))(body=yml_object, **kwargs)
     if verbose:
-      print("{0} created. status='{1}'".format(kind, str(resp.status)))
+      print("{0} created. resp={1}".format(kind, resp))
     return k8s_api
 
   @staticmethod
@@ -149,6 +169,20 @@ class KubeHelper():
         print("create_from_yaml: - KUBERNETES_SERVICE_HOST not set!")
       return
     config.load_incluster_config()
+    #with open('/var/run/secrets/kubernetes.io/serviceaccount/token','r') as t:
+    #  api_token = t.read()
+    #3configuration = client.Configuration()
+    #url = "https://{0}:{1}".format(os.getenv('KUBERNETES_SERVICE_HOST'), os.getenv('KUBERNETES_SERVICE_PORT'))
+    #configuration.host = url
+    #configuration.verify_ssl = False
+    #with open('/var/run/secrets/kubernetes.io/serviceaccount/ca.crt','r') as cert:
+    #  configuration.ssl_ca_cert = cert.read()
+    #configuration.ssl_ca_cert = '/var/run/secrets/kubernetes.io/serviceaccount/ca.crt'
+    #configuration.debug = True
+    #configuration.api_key = {"authorization": "Bearer " + api_token}
+    #configuration.assert_hostname = True
+    #configuration.verify_ssl = False
+    #client.Configuration.set_default(configuration)
     #info = KubeHelper.get_ns_kind_name(yaml_file)
     k8s_client = client.ApiClient()
     reponses = KubeHelper.create_from_many_yaml(k8s_client, yaml_file, verbose)
