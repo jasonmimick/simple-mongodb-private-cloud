@@ -1,11 +1,14 @@
 import logging
 from flask import Flask
+from http import HTTPStatus
 from openbrokerapi import api
 from openbrokerapi.catalog import (
     ServicePlan,
 )
 from openbrokerapi.log_util import basic_config
+from openbrokerapi.helper import to_json_response
 from openbrokerapi import api
+from openbrokerapi import errors
 from openbrokerapi.service_broker import (
     ServiceBroker,
     UnbindDetails,
@@ -19,6 +22,17 @@ from openbrokerapi.service_broker import (
     ProvisionedServiceSpec,
     Service,
     LastOperation)
+from openbrokerapi.response import (
+    BindResponse,
+    CatalogResponse,
+    DeprovisionResponse,
+    EmptyResponse,
+    ErrorResponse,
+    LastOperationResponse,
+    ProvisioningResponse,
+    UpdateResponse,
+)
+
 import os
 from services import service, kubernetes, atlas, devops
 
@@ -35,6 +49,7 @@ class HTTPException(Exception):
         if status_code is not None:
             self.status_code = status_code
         self.payload = payload
+        print("HTTPException.__init__(): %s" % self)
 
     def to_dict(self):
         rv = dict(self.payload or ())
@@ -50,6 +65,7 @@ class MongoDBOpenServiceBroker(ServiceBroker):
       self.service_providers['kubernetes']=kubernetes.KubernetesService(logger)
       #service_providers['atlas']=atlas.AtlasService(logger)
       self.service_plans = {}
+      self.__last_op = {}
 
 
 
@@ -79,13 +95,13 @@ class MongoDBOpenServiceBroker(ServiceBroker):
             tags=list(set(tags)),
             plan_updateable=False,
       )
+      self.__last_op = LastOperation("catalog", catalog )
       return catalog
 
     def provision(self, instance_id: str, service_details: ProvisionDetails,
                   async_allowed: bool) -> ProvisionedServiceSpec:
         logger.info("provision") 
-        # TODO: Lookup provider and call provision() based upon plan selected
-        # check that the plan_id exists!
+          
         provider_name = self.service_plans[service_details.plan_id]
         provider = self.service_providers[provider_name]
         logger.info("request to provision plan_id=%s" % service_details.plan_id)
@@ -103,22 +119,24 @@ class MongoDBOpenServiceBroker(ServiceBroker):
 
     def deprovision(self, instance_id: str, details: DeprovisionDetails, async_allowed: bool) -> DeprovisionServiceSpec:
         logger.info("deprovision") 
+        #raise errors.ErrInstanceDoesNotExist()
+        provider_name = self.service_plans[service_details.plan_id]
+        provider = self.service_providers[provider_name]
+        logger.info("request to provision plan_id=%s" % service_details.plan_id)
+        spec = provider.provision(instance_id, service_details, async_allowed)
+        return spec
 
     def last_operation(self, instance_id: str, operation_data: str) -> LastOperation:
         logger.info("last_opertation") 
+        return self.__last_op
 
 def create_broker_blueprint(credentials: api.BrokerCredentials):
     logger.info("create_broker_blueprint: credentials: %s %s" % (credentials.username, credentials.password))
     return api.get_blueprint(MongoDBOpenServiceBroker(), credentials, logger)
 
 app = Flask(__name__)
-logger = basic_config()  # Use root logger with a basic configuration provided by openbrokerapi.log_utils
 
-@app.errorhandler(HTTPException)
-def handle_invalid_usage(error):
-  response = jsonify(error.to_dict())
-  response.status_code = error.status_code
-  return response
+logger = basic_config()  
 
 # If we're running inside a kubernetes cluster, then we expect the credentials for
 # the broker to be in a file mounted from a secret.
@@ -135,5 +153,12 @@ else:
   username = "test"
   password = "test"
 openbroker_bp = api.get_blueprint(MongoDBOpenServiceBroker(), api.BrokerCredentials(username,password), logger)
+#@openbroker_bp.app_errorhandler(HTTPException)
+#def handle_http_error(error):
+#  response = jsonify(error.to_dict())
+#  response.status_code = error.status_code
+#  print("app.errorhandler: response: %s" % response)
+#  return response
 app.register_blueprint(openbroker_bp)
+#app.register_error_handler(handle_http_error)
 app.run("0.0.0.0")

@@ -1,6 +1,9 @@
 #!/bin/bash
 SLEEP=7
 kubectl delete ns foobar
+kubectl delete crd mongodbreplicasets.mongodb.com
+kubectl delete crd mongodbshardedclusters.mongodb.com
+kubectl delete crd mongodbstandalones.mongodb.com
 kubectl delete -f examples/mongodb-open-service-broker.yaml
 sleep ${SLEEP}
 kubectl create -f examples/mongodb-open-service-broker.yaml
@@ -17,6 +20,13 @@ sleep ${SLEEP}
 curl -vvv --user "admin:secret123" --header "Content-Type: application/json"  --header "X-Broker-Api-Version: 2.14" -X PUT "http://localhost:5000/v2/service_instances/myMongoOpsMgr?accepts_incomplete=false" -d @docker/mongodb-open-service-broker/samples/sample-provision-1.json
 
 sleep ${SLEEP}
-kubectl logs -n osbmdb-demo deployment/mongodb-open-service-broker
+#kubectl logs -n osbmdb-demo deployment/mongodb-open-service-broker
 #kubectl delete -f examples/mongodb-open-service-broker.yaml
+
+sleep ${SLEEP}
+curl -vvv --user "admin:secret123" --header "Content-Type: application/json" --header "X-Broker-Api-Version: 2.14" -X DELETE "http://localhost:5000/v2/service_instances/myMongoOpsMgr?accepts_incomplete=false&service_id=mongodb-open-service-broker&plan_id=hello-mongodb-kubernetes-operator"
+
+sleep ${SLEEP}
+kubectl logs -n osbmdb-demo deployment/mongodb-open-service-broker
+
 kill -9 ${port_forward_pid}

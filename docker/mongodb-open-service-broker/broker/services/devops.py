@@ -20,7 +20,9 @@ from openbrokerapi.service_broker import (
     ProvisionState,
     UnbindDetails,
     UpdateDetails,
-    ServiceBroker)
+    ServiceBroker,
+    DeprovisionServiceSpec,
+    DeprovisionDetails)
 from jinja2 import Template
 from kubernetes import client, config, utils
 import yaml
@@ -66,9 +68,13 @@ class KubeHelper():
 
   @staticmethod
   def read_many_ns_object(k8s_client, yaml_filepath_or_contents, verbose=False):
+    if verbose:
+      print("read_many_ns_object yaml_filepath_or_contents=%s" % yaml_filepath_or_contents)
     responses = []
     yamls = KubeHelper.get_documents(yaml_filepath_or_contents, verbose)
     for y in yamls:
+      if verbose:
+        print("#####  ------>>>>>>> y:%s" % y)
       responses.append( KubeHelper.read_ns_object(y,verbose) ) 
     return responses
 
@@ -150,7 +156,7 @@ class KubeHelper():
       resp = getattr(k8s_api, "create_{0}".format(kind))(body=yml_object, **kwargs)
     if verbose:
       print("{0} created. resp={1}".format(kind, resp))
-    return k8s_api
+    return resp 
 
   @staticmethod
   def create_from_many_yaml(k8s_client, yaml_file, verbose=False):
@@ -185,11 +191,13 @@ class KubeHelper():
     #client.Configuration.set_default(configuration)
     #info = KubeHelper.get_ns_kind_name(yaml_file)
     k8s_client = client.ApiClient()
-    reponses = KubeHelper.create_from_many_yaml(k8s_client, yaml_file, verbose)
-    print("responses: {0}".format(responses))
-    deps = KubeHelper.read_ns_object(k8s_client,yaml_file)
+    responses = KubeHelper.create_from_many_yaml(k8s_client, yaml_file, verbose)
+    print("responses: %s" % responses)
     if verbose:
-      print("{0} created".format(deps.metadata.name)) 
+      #info = [ { "kind" : r['kind'], "name" : r['metadata']['name'] } for r in responses ]
+      info = [ { "kind" : r.kind, "name" : r.metadata.name } for r in responses ]
+      print("create_from_yaml: Created: %s" % info) 
+    return responses
 
 class DevOpsService(OSBMDBService):
 
@@ -288,3 +296,9 @@ class DevOpsService(OSBMDBService):
            operation='some info here'
     )
     return spec
+
+
+  def deprovision(self, instance_id: str, service_details: DeprovisionDetails, async_allowed: bool) -> DeprovisionServiceSpec:
+    print("---> deprovision")
+    return DeprovisionServiceSpec(is_async=True)
+
