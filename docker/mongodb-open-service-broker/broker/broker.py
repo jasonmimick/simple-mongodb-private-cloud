@@ -64,6 +64,7 @@ class MongoDBOpenServiceBroker(ServiceBroker):
       self.service_providers['devops']=devops.DevOpsService(logger)
       self.service_providers['kubernetes']=kubernetes.KubernetesService(logger)
       #service_providers['atlas']=atlas.AtlasService(logger)
+      self.provisioned_services = {}
       self.service_plans = {}
       self.__last_op = {}
 
@@ -106,6 +107,8 @@ class MongoDBOpenServiceBroker(ServiceBroker):
         provider = self.service_providers[provider_name]
         logger.info("request to provision plan_id=%s" % service_details.plan_id)
         spec = provider.provision(instance_id, service_details, async_allowed)
+        self.provisioned_services[instance_id]={ "provider" : provider,
+"plan_id" : service_details.plan_id, "spec" : spec }
         return spec
 
     def bind(self, instance_id: str, binding_id: str, details: BindDetails) -> Binding:
@@ -119,11 +122,12 @@ class MongoDBOpenServiceBroker(ServiceBroker):
 
     def deprovision(self, instance_id: str, details: DeprovisionDetails, async_allowed: bool) -> DeprovisionServiceSpec:
         logger.info("deprovision") 
-        #raise errors.ErrInstanceDoesNotExist()
-        provider_name = self.service_plans[service_details.plan_id]
-        provider = self.service_providers[provider_name]
-        logger.info("request to provision plan_id=%s" % service_details.plan_id)
-        spec = provider.provision(instance_id, service_details, async_allowed)
+        logger.info("request to deprovision instance_id=%s" % instance_id)
+        logger.info("deprovision: details=%s" % details)
+        if not instance_id in self.provisioned_services:
+          raise errors.ErrInstanceDoesNotExist()
+        provider = self.provisioned_services[instance_id]["provider"]
+        spec = provider.deprovision(instance_id, details, async_allowed)
         return spec
 
     def last_operation(self, instance_id: str, operation_data: str) -> LastOperation:
