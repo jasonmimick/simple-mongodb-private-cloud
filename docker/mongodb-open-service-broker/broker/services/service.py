@@ -22,8 +22,9 @@ from openbrokerapi.catalog import (
 # interface for services
 class OSBMDBService(object, metaclass=abc.ABCMeta):
   
-  def __init__(self, logger):
+  def __init__(self, logger,broker):
     self.logger = logger
+    self.broker = broker
 
   @abc.abstractmethod
   def plans(self) -> List[ServicePlan]:

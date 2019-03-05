@@ -109,6 +109,14 @@ class KubeHelper():
 
   @staticmethod
   def utils_create_from_yaml(k8s_client, yaml_file, verbose=False, **kwargs):
+    return KubeHelper.make_it_so("create", k8s_client, yaml_file, verbose, **kwargs)
+
+  @staticmethod
+  def make_it_so(op,k8s_client, yaml_file, verbose=False, **kwargs):
+    ops = [ "create", "delete", "patch" ]
+    if not op in ops:
+      raise HTTPException("Invalid operation='%s'" % op, status_code=400)      
+       
     yml_object = yaml.load(yaml.dump(yaml_file))
     # TODO: case of yaml file containing multiple objects
     group, _, version = yml_object["apiVersion"].partition("/")
@@ -150,12 +158,12 @@ class KubeHelper():
     else:
       namespace = "default"
     # Expect the user to create namespaced objects more often
-    if hasattr(k8s_api, "create_namespaced_{0}".format(kind)):
-      resp = getattr(k8s_api, "create_namespaced_{0}".format(kind))(body=yml_object, namespace=namespace, **kwargs)
+    if hasattr(k8s_api, "{0}_namespaced_{1}".format(op,kind)):
+      resp = getattr(k8s_api, "{0}_namespaced_{1}".format(op,kind))(body=yml_object, namespace=namespace, **kwargs)
     else:
-      resp = getattr(k8s_api, "create_{0}".format(kind))(body=yml_object, **kwargs)
+      resp = getattr(k8s_api, "{0}_{1}".format(op,kind))(body=yml_object, **kwargs)
     if verbose:
-      print("{0} created. resp={1}".format(kind, resp))
+      print("{0} {1}. resp={2}".format(kind, op, resp))
     return resp 
 
   @staticmethod
@@ -175,21 +183,6 @@ class KubeHelper():
         print("create_from_yaml: - KUBERNETES_SERVICE_HOST not set!")
       return
     config.load_incluster_config()
-    #with open('/var/run/secrets/kubernetes.io/serviceaccount/token','r') as t:
-    #  api_token = t.read()
-    #3configuration = client.Configuration()
-    #url = "https://{0}:{1}".format(os.getenv('KUBERNETES_SERVICE_HOST'), os.getenv('KUBERNETES_SERVICE_PORT'))
-    #configuration.host = url
-    #configuration.verify_ssl = False
-    #with open('/var/run/secrets/kubernetes.io/serviceaccount/ca.crt','r') as cert:
-    #  configuration.ssl_ca_cert = cert.read()
-    #configuration.ssl_ca_cert = '/var/run/secrets/kubernetes.io/serviceaccount/ca.crt'
-    #configuration.debug = True
-    #configuration.api_key = {"authorization": "Bearer " + api_token}
-    #configuration.assert_hostname = True
-    #configuration.verify_ssl = False
-    #client.Configuration.set_default(configuration)
-    #info = KubeHelper.get_ns_kind_name(yaml_file)
     k8s_client = client.ApiClient()
     responses = KubeHelper.create_from_many_yaml(k8s_client, yaml_file, verbose)
     print("responses: %s" % responses)
@@ -198,6 +191,19 @@ class KubeHelper():
       info = [ { "kind" : r.kind, "name" : r.metadata.name } for r in responses ]
       print("create_from_yaml: Created: %s" % info) 
     return responses
+
+
+  def delete_from_yaml(yaml_file, verbose=False):
+    config.load_incluster_config()
+    k8s_client = client.ApiClient()
+    responses = KubeHelper.make_it_so("delete",k8s_client, yaml_file, verbose)
+    print("responses: %s" % responses)
+    if verbose:
+      #info = [ { "kind" : r['kind'], "name" : r['metadata']['name'] } for r in responses ]
+      info = [ { "kind" : r.kind, "name" : r.metadata.name } for r in responses ]
+      print("create_from_yaml: Created: %s" % info) 
+    return responses
+    
 
 class DevOpsService(OSBMDBService):
 
@@ -272,6 +278,10 @@ class DevOpsService(OSBMDBService):
       self.logger.debug('rendered_template:%s' % template)
     return rendered_templates
 
+  def __init__(self, logger, broker):
+    super().__init__(logger,broker)
+    self.my_services = {}
+
   def provision(self, instance_id: str, service_details: ProvisionDetails, async_allowed: bool) -> ProvisionedServiceSpec:
     self.logger.info("devops provider - provision called") 
     self.logger.info("devops provider - instance_id:%s" % instance_id) 
@@ -286,9 +296,11 @@ class DevOpsService(OSBMDBService):
     self.logger.info("render parameters: %s" % parameters)
     outputs = self.render_templates(templates,parameters)
     self.logger.debug( outputs )
+    self.my_services[instance_id] = []
     for output in outputs.keys():
       self.logger.info("Provisioning: %s" % output) 
       KubeHelper.create_from_yaml( outputs[output]['rendered_template'], True) 
+      self.my_services[instance_id].append( outputs[output]['rendered_template'] )
     # == 'hello-mongodb-kubernetes-operator':
     #  self.logger.info("provision hello-mongodb-kubernetes-operator start")
     spec = ProvisionedServiceSpec(
@@ -300,5 +312,13 @@ class DevOpsService(OSBMDBService):
 
   def deprovision(self, instance_id: str, service_details: DeprovisionDetails, async_allowed: bool) -> DeprovisionServiceSpec:
     print("---> deprovision")
-    return DeprovisionServiceSpec(is_async=True)
+    specs = self.my_services[instance_id]
+    try:
+      for output in specs:
+        self.logger.info("DEprovisioning: %s" % output) 
+        KubeHelper.delete_from_yaml( outputs[output]['rendered_template'], True) 
+    finally:
+      # clean up
+      del self.my_services[instance_id]
+      return DeprovisionServiceSpec(is_async=True)
 

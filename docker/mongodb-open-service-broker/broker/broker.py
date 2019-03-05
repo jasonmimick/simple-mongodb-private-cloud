@@ -61,8 +61,8 @@ class MongoDBOpenServiceBroker(ServiceBroker):
 
     def __init__(self):
       self.service_providers = {}
-      self.service_providers['devops']=devops.DevOpsService(logger)
-      self.service_providers['kubernetes']=kubernetes.KubernetesService(logger)
+      self.service_providers['devops']=devops.DevOpsService(logger, self)
+      self.service_providers['kubernetes']=kubernetes.KubernetesService(logger,self)
       #service_providers['atlas']=atlas.AtlasService(logger)
       self.provisioned_services = {}
       self.service_plans = {}
@@ -127,8 +127,8 @@ class MongoDBOpenServiceBroker(ServiceBroker):
         if not instance_id in self.provisioned_services:
           raise errors.ErrInstanceDoesNotExist()
         provider = self.provisioned_services[instance_id]["provider"]
-        spec = provider.deprovision(instance_id, details, async_allowed)
-        return spec
+        result = provider.deprovision(instance_id, details, async_allowed)
+        return result
 
     def last_operation(self, instance_id: str, operation_data: str) -> LastOperation:
         logger.info("last_opertation") 
