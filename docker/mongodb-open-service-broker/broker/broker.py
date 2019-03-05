@@ -96,7 +96,7 @@ class MongoDBOpenServiceBroker(ServiceBroker):
             tags=list(set(tags)),
             plan_updateable=False,
       )
-      self.__last_op = LastOperation("catalog", catalog )
+      #self.__last_op = LastOperation("catalog", catalog )
       return catalog
 
     def provision(self, instance_id: str, service_details: ProvisionDetails,
@@ -108,7 +108,7 @@ class MongoDBOpenServiceBroker(ServiceBroker):
         logger.info("request to provision plan_id=%s" % service_details.plan_id)
         spec = provider.provision(instance_id, service_details, async_allowed)
         self.provisioned_services[instance_id]={ "provider" : provider,
-"plan_id" : service_details.plan_id, "spec" : spec }
+"plan_id" : service_details.plan_id, "spec" : spec, "last_op" : "provision" }
         return spec
 
     def bind(self, instance_id: str, binding_id: str, details: BindDetails) -> Binding:
@@ -124,15 +124,22 @@ class MongoDBOpenServiceBroker(ServiceBroker):
         logger.info("deprovision") 
         logger.info("request to deprovision instance_id=%s" % instance_id)
         logger.info("deprovision: details=%s" % details)
-        if not instance_id in self.provisioned_services:
+        if not instance_id in self.provisioned_services.keys():
           raise errors.ErrInstanceDoesNotExist()
         provider = self.provisioned_services[instance_id]["provider"]
         result = provider.deprovision(instance_id, details, async_allowed)
+        self.provisioned_services[instance_id]["spec"] = result
+        self.provisioned_services[instance_id]["last_op"]="provision"
         return result
 
     def last_operation(self, instance_id: str, operation_data: str) -> LastOperation:
         logger.info("last_opertation") 
-        return self.__last_op
+        if not instance_id in self._provisioned_services:
+          raise errors.ErrInstanceDoesNotExist()
+        spec = self.provisioned_services[instance_id]["spec"]
+        op = self.provisioned_services[instance_id]["last_op"]
+        lo = LastOperation(op, spec)
+        return lo
 
 def create_broker_blueprint(credentials: api.BrokerCredentials):
     logger.info("create_broker_blueprint: credentials: %s %s" % (credentials.username, credentials.password))

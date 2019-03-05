@@ -1,9 +1,9 @@
----
+--
 apiVersion: v1
 kind: Service
 metadata:
   name: ops-manager
-  namespace: mongodb
+  namespace: {{ namespace }}
 spec:
   type: NodePort
   selector:
@@ -20,7 +20,7 @@ metadata:
   labels:
     app: mongodb-enterprise-ops-manager
   name: mongodb-enterprise-ops-manager
-  namespace: mongodb
+  namespace: {{ namespace }}
 spec:
   replicas: 1
   serviceName: ops-manager
