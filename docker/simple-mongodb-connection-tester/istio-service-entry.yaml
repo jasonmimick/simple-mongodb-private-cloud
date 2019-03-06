@@ -1,0 +1,14 @@
+apiVersion: networking.istio.io/v1alpha3
+kind: ServiceEntry
+metadata:
+  name: simple-mongodb-connection-tester 
+spec:
+  hosts:
+  - docker-shard-00-00-1cihx.gcp.mongodb.net
+  - docker-shard-00-01-1cihx.gcp.mongodb.net
+  - docker-shard-00-02-1cihx.gcp.mongodb.net 
+  ports:
+  - number: 27017
+    name: mongodb
+    protocol: TCP
+  resolution: NONE

@@ -1,0 +1,1 @@
+pymongo[snappy,gssapi,srv,tls]>=3.6
