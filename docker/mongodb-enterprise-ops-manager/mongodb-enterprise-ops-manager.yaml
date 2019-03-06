@@ -53,6 +53,13 @@ spec:
           mountPath: /data
         - name: mongodb-mms-config
           mountPath: /etc/mongodb-mms
+        - name: mongodb-mms-global-admin
+          mountPath: /etc/mongodb-mms/global-admin
+          readOnly: true
+        volumes:
+        - name: mongodb-mms-global-admin
+          secret:
+            secretName: mongodb-open-service-broker-credentials
         resources:
           requests:
             memory: "4Gi"

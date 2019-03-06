@@ -11,6 +11,7 @@
   "parameters": {
     "globalAdminUserName": "admin",
     "globalAdminPassword": "password12345%",
-    "port"               : 8080
+    "port"               : 8080,
+    "image"              : "jmimick/mongodb-enterprise-ops-manager"
   }
 }

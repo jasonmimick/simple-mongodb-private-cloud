@@ -232,7 +232,7 @@ class DevOpsService(OSBMDBService):
 
   def load_templates(self,plan_id):
     # Load all templates in repo
-    template_dir = "/broker/templates/devops/**"
+    template_dir = "/broker/templates/devops/{0}/".format(plan_id)
     template_filename_wildcard = "*.yaml"
     template_files = glob.glob("%s/%s" % (template_dir, template_filename_wildcard))
     templates = {}

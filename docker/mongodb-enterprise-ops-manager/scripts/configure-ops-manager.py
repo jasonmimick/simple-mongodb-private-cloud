@@ -48,6 +48,21 @@ def post(om_url, data, username=None, token=None):
     return json.loads(resp.read().decode('utf-8'))
 
 if __name__ == '__main__':
+    # If we're running inside a kubernetes cluster, then we expect the credentials for
+    # the broker to be in a file mounted from a secret.
+    if os.environ.get('KUBERNETES_SERVICE_HOST'):
+      k8s_host = os.environ.get('KUBERNETES_SERVICE_HOST')
+      print("Detected running in a Kubernetes cluster. KUBERNETES_SERVICE_HOST=%s" % k8s_host)
+      config_path = "/etc/mongodb-mms/global-admin"
+      with open( ("%s/username" % config_path), 'r') as secret:
+        username = secret.read()
+      with open( ("%s/password" % config_path), 'r') as secret:
+        password = secret.read()
+    else:
+      print("Did not detect Kubernetes cluster. Running with default 'test/test' credentials")
+      username = DEFAULT_ADMIN
+      password = DEFAULT_PASS
+
     # Retrieve arguments
     args = docopt.docopt(__doc__)
     url = args['OPS_MANAGER_HOST'].rstrip('/')
@@ -78,8 +93,8 @@ if __name__ == '__main__':
        print(" %s did not exist!" % filename)
     # Create first user (global owner)
     user_data = post(url + "/api/public/v1.0/unauth/users?whitelist=0.0.0.0%2F0", {
-        "username": DEFAULT_ADMIN,
-        "password": DEFAULT_PASS,
+        "username": username,
+        "password": password,
         "firstName": "Admin",
         "lastName": "Admin"
     })
@@ -89,8 +104,8 @@ if __name__ == '__main__':
 
     # Store env variables
     with open(args['ENV_FILE'], 'w') as f:
-        om_user = 'export OM_USER={}'.format(DEFAULT_ADMIN)
-        om_pass = 'export OM_PASSWORD={}'.format(DEFAULT_PASS)
+        om_user = 'export OM_USER={}'.format(username)
+        om_pass = 'export OM_PASSWORD={}'.format(password)
         om_api_key = 'export OM_API_KEY={}'.format(api_key)
         f.write(om_host + '\n')
         f.write(om_user + '\n')

@@ -35,12 +35,13 @@ RUN apt-get -qq update \
         sudo \
     && apt-get -qq -yt testing install \
         python3-venv \
-        python3.6-venv \
-        python3.6 \
+        python3.7 \
+        python3.7-venv \
         python3-pip \
     && apt-get upgrade -y -qq \
     && apt-get dist-upgrade -y -qq \
     && rm -rf /var/lib/apt/lists/*
+
 
 # Download and install Ops Manager, set apropriate permissions
 WORKDIR /opt
@@ -81,7 +82,7 @@ RUN chown -R mongodb-mms:root /opt/scripts \
     && chmod -R 0775 /opt/scripts
 
 # Prepare a Python3 environment, for running the setup script (user registration, project, whitelist)
-RUN python3.6 -m venv /opt/venv \
+RUN python3.7 -m venv /opt/venv \
     && . /opt/venv/bin/activate \
     && python -m pip install --upgrade pip \
     && python -m pip install -r "/opt/scripts/requirements.txt" \
