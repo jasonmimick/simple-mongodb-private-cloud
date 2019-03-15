@@ -91,6 +91,7 @@ class MongoDBOpenServiceBroker(ServiceBroker):
             id='mongodb-open-service-broker',
             name='mongodb-open-service-broker-service',
             description='This service creates and provides your applications access to MongoDB services.',
+            dashboard_client='http://mongodb-open-service-broker:8080',
             bindable=True,
             plans=plans,
             tags=list(set(tags)),

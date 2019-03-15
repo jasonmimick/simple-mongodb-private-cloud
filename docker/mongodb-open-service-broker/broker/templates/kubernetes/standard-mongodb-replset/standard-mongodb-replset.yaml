@@ -1,0 +1,18 @@
+#
+# standard-mongodb-replset template
+#
+---
+apiVersion: mongodb.com/v1
+kind: MongoDbReplicaSet
+metadata:
+  name: {{ name }} 
+  namespace: {{ namespace }} 
+spec:
+  members: {{ members }}
+  version: {{ version }}
+  project: {{ project }}
+  credentials: {{ credentials }}
+  persistent: true
+  podSpec:
+    cpu: '{{ cpu }}'
+    memory: {{ memory }}

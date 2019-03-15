@@ -1,19 +1,13 @@
-apiVersion: v1
-kind: Namespace
-metadata:
- name: osbmdb-demo
 ---
 apiVersion: v1
 kind: ServiceAccount
 metadata:
   name: osbmdb  
-  namespace: osbmdb-demo
 ---
 apiVersion: rbac.authorization.k8s.io/v1
 kind: ClusterRoleBinding
 metadata:
   name: osbmdb
-  namespace: osbmdb-demo
 roleRef:
   apiGroup: rbac.authorization.k8s.io
   kind: ClusterRole
@@ -21,13 +15,12 @@ roleRef:
 subjects:
   - kind: ServiceAccount
     name: osbmdb
-    namespace: osbmdb-demo
+    namespace: mongodb
 ---
 apiVersion: v1
 kind: Secret
 metadata:
   name: "mongodb-open-service-broker-credentials"
-  namespace: osbmdb-demo
 stringData:
   username: "admin"
   password: "secret123"
@@ -38,12 +31,16 @@ metadata:
   labels:
     app: mongodb-open-service-broker
   name: mongodb-open-service-broker
-  namespace: osbmdb-demo
 spec:
   ports:
+  - port: 8080 
+    protocol: TCP
+    targetPort: 8080 
+    name: http-ui
   - port: 5000 
     protocol: TCP
-    targetPort: 5000 
+    targetPort: 5000
+    name: http 
   selector:
     app: mongodb-open-service-broker 
   type: LoadBalancer
@@ -52,7 +49,6 @@ apiVersion: apps/v1beta1
 kind: Deployment
 metadata:
   name: "mongodb-open-service-broker"
-  namespace: osbmdb-demo
 spec:
   replicas: 1 
   template:
@@ -66,6 +62,8 @@ spec:
         image: "jmimick/mongodb-open-service-broker"
         imagePullPolicy: "Always"
         ports:
+        - name: http-ui
+          containerPort: 8080 
         - name: http
           containerPort: 5000 
         volumeMounts:
