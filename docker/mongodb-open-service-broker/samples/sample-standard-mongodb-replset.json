@@ -2,7 +2,7 @@
   "service_id": "mongodb-open-service-broker",
   "plan_id": "standard-mongodb-replset",
   "context": {
-    "version": "4.0",
+    "version": "4.0.0",
     "namespace": "mongodb"
   },
   "organization_guid": "sample mongodb paremeters",

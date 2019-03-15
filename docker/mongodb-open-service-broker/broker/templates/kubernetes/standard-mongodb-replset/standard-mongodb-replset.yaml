@@ -9,10 +9,10 @@ metadata:
   namespace: {{ namespace }} 
 spec:
   members: {{ members }}
-  version: {{ version }}
+  version: '{{ version }}'
   project: {{ project }}
   credentials: {{ credentials }}
   persistent: true
   podSpec:
     cpu: '{{ cpu }}'
-    memory: {{ memory }}
+    memory: '{{ memory }}'

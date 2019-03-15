@@ -1,0 +1,13 @@
+{
+"OfferTitle": "Test Microsoft",
+"LeadSource": "Test run through MS Flow",
+"UserDetails": {
+"Company": "Contoso",
+"Country": "USA",
+"Email": "someone@contoso.com",
+"FirstName": "Some",
+"LastName": "One",
+"Phone": "16175555555",
+"Title": "Esquire"
+}
+}
