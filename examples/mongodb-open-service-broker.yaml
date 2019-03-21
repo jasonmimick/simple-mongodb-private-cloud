@@ -15,6 +15,9 @@ roleRef:
 subjects:
   - kind: ServiceAccount
     name: osbmdb
+    namespace: default 
+  - kind: ServiceAccount
+    name: osbmdb
     namespace: mongodb
 ---
 apiVersion: v1

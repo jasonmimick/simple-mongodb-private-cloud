@@ -1,0 +1,19 @@
+apiVersion: v1
+kind: Pod
+metadata:
+  name: simple-mongodb-connection-test 
+  labels:
+    purpose: demonstration
+spec:
+  containers:
+  - name: connection-tester
+    image: jmimick/simple-mongodb-connection-tester
+    args: ["$(CONNECTION_STRING)"]
+    env:
+    - name: CONNECTION_STRING
+      valueFrom:
+        secretKeyRef:
+          name: simple-mongodb-connection-tester
+          key: mongodb 
+  restartPolicy: OnFailure
+

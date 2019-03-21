@@ -1,0 +1,14 @@
+---
+apiVersion: servicecatalog.k8s.io/v1beta1
+kind: ClusterServiceBroker
+metadata:
+  name: mongodb-broker
+  namespace: default
+spec:
+  authInfo:
+    basic:
+      secretRef:
+        name: mongodb-open-service-broker-credentials
+        namespace: mongodb
+  url: http://34.73.94.47:5000 
+#  url: http://mongodb-open-service-broker.svc.cluster.local:5000 

@@ -17,7 +17,11 @@ from openbrokerapi.service_broker import (
     ProvisionState,
     UnbindDetails,
     UpdateDetails,
-    ServiceBroker)
+    ServiceBroker,
+    DeprovisionServiceSpec,
+    DeprovisionDetails)
+from kubernetes import client, config, utils
+import yaml
 
 class KubernetesService(OSBMDBService):
 
@@ -74,3 +78,16 @@ class KubernetesService(OSBMDBService):
            operation="Provisioned MongoDB: %s" % n
     )
     return spec
+
+
+  def deprovision(self, instance_id: str, service_details: DeprovisionDetails, async_allowed: bool) -> DeprovisionServiceSpec:
+    print("---> deprovision")
+    specs = self.my_services[instance_id]
+    try:
+      for output in specs:
+        self.logger.info("DEprovisioning: %s" % output) 
+        KubeHelper.delete_from_yaml( outputs[output]['rendered_template'], True) 
+    finally:
+      # clean up
+      del self.my_services[instance_id]
+      return DeprovisionServiceSpec(is_async=True)

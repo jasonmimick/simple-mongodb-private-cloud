@@ -1,0 +1,21 @@
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: mdb-oper-config 
+  namespace: mongodb
+data:
+  projectName: HelloKube
+  baseUrl: http://ops-manager:8080
+---
+apiVersion: v1
+kind: Secret
+metadata:
+  name: mdb-oper-creds
+  namespace: mongodb
+type: Opaque
+stringData:
+  user: admin
+  publicApiKey: a85a9559-c7c7-4ae0-8ab7-1bd88a14a5e0 
+  
+

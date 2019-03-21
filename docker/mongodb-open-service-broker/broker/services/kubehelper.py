@@ -174,6 +174,7 @@ class KubeHelper():
           print("resp={0}".format(resp))
       except ApiException as e:
         print("Exception when calling CustomObjectsApi->create_cluster_custom_object: %s\n" % e)
+        resp = e
     return resp 
 
   @staticmethod

@@ -86,30 +86,32 @@ class MongoDBOpenServiceBroker(ServiceBroker):
           self.service_plans[plan.id]=provider_name
         plans.extend( provider_plans )
         tags.extend( provider.tags() )
+            
+      # Omitting this, needs nested v2.DashboardClient type
+      #     dashboard_client='http://mongodb-open-service-broker:8080',
 
       catalog = Service(
             id='mongodb-open-service-broker',
             name='mongodb-open-service-broker-service',
             description='This service creates and provides your applications access to MongoDB services.',
-            dashboard_client='http://mongodb-open-service-broker:8080',
             bindable=True,
             plans=plans,
             tags=list(set(tags)),
             plan_updateable=False,
       )
-      #self.__last_op = LastOperation("catalog", catalog )
+      self.__last_op = LastOperation("catalog", catalog )
       return catalog
 
     def provision(self, instance_id: str, service_details: ProvisionDetails,
                   async_allowed: bool) -> ProvisionedServiceSpec:
         logger.info("provision") 
+        self.provisioned_services[instance_id]={ "provider" : provider, "plan_id" : service_details.plan_id, "spec" : spec, "last_op" : LastOperation("provision","Started") }
           
         provider_name = self.service_plans[service_details.plan_id]
         provider = self.service_providers[provider_name]
         logger.info("request to provision plan_id=%s" % service_details.plan_id)
         spec = provider.provision(instance_id, service_details, async_allowed)
-        self.provisioned_services[instance_id]={ "provider" : provider,
-"plan_id" : service_details.plan_id, "spec" : spec, "last_op" : "provision" }
+        self.provisioned_services[instance_id]={ "provider" : provider, "plan_id" : service_details.plan_id, "spec" : spec, "last_op" : LastOperation("provision",spec) }
         return spec
 
     def bind(self, instance_id: str, binding_id: str, details: BindDetails) -> Binding:
@@ -135,7 +137,7 @@ class MongoDBOpenServiceBroker(ServiceBroker):
 
     def last_operation(self, instance_id: str, operation_data: str) -> LastOperation:
         logger.info("last_opertation") 
-        if not instance_id in self._provisioned_services:
+        if not instance_id in self.provisioned_services:
           raise errors.ErrInstanceDoesNotExist()
         spec = self.provisioned_services[instance_id]["spec"]
         op = self.provisioned_services[instance_id]["last_op"]
