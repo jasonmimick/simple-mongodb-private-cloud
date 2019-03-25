@@ -67,7 +67,7 @@ class MongoDBOpenServiceBroker(ServiceBroker):
       self.provisioned_services = {}
       self.service_plans = {}
       self.__last_op = {}
-
+      self.__catalog = {}
 
 
     def catalog(self) -> Service:
@@ -83,7 +83,7 @@ class MongoDBOpenServiceBroker(ServiceBroker):
         provider = self.service_providers[provider_name]
         provider_plans = provider.plans()
         for plan in provider_plans:
-          self.service_plans[plan.id]=provider_name
+          self.service_plans[plan.id]= { 'provider_name' : provider_name, 'plans' : provider_plans }
         plans.extend( provider_plans )
         tags.extend( provider.tags() )
             
@@ -100,6 +100,7 @@ class MongoDBOpenServiceBroker(ServiceBroker):
             plan_updateable=False,
       )
       self.__last_op = LastOperation("catalog", catalog )
+      self.__catalog = catalog
       return catalog
 
     def provision(self, instance_id: str, service_details: ProvisionDetails,
@@ -107,7 +108,7 @@ class MongoDBOpenServiceBroker(ServiceBroker):
         logger.info("provision") 
         self.provisioned_services[instance_id]={ "provider" : provider, "plan_id" : service_details.plan_id, "spec" : spec, "last_op" : LastOperation("provision","Started") }
           
-        provider_name = self.service_plans[service_details.plan_id]
+        provider_name = self.service_plans[service_details.plan_id]['provider_name']
         provider = self.service_providers[provider_name]
         logger.info("request to provision plan_id=%s" % service_details.plan_id)
         spec = provider.provision(instance_id, service_details, async_allowed)
@@ -134,6 +135,10 @@ class MongoDBOpenServiceBroker(ServiceBroker):
         self.provisioned_services[instance_id]["spec"] = result
         self.provisioned_services[instance_id]["last_op"]="provision"
         return result
+
+    def check_plan_id(self, plan_id: str) -> bool:
+        return ( plan_id in self.service_plans.keys() )
+
 
     def last_operation(self, instance_id: str, operation_data: str) -> LastOperation:
         logger.info("last_opertation") 

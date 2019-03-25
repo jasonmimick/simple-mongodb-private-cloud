@@ -1,0 +1,17 @@
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: hello-mongo-kube
+data:
+  projectName: hello-mongo-kube
+  baseUrl: http://35.231.78.17:8080
+---
+apiVersion: v1
+kind: Secret
+metadata:
+  name: hello-mongo-kube
+type: Opaque
+stringData:
+  user: admin
+  publicApikey: {publicApiKey}

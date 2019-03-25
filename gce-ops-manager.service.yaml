@@ -1,0 +1,26 @@
+apiVersion: v1
+kind: Service
+metadata:
+  creationTimestamp: "2019-01-25T19:41:09Z"
+  name: ops-manager
+  namespace: mongodb
+  resourceVersion: "9662"
+  selfLink: /api/v1/namespaces/mongodb/services/ops-manager
+  uid: 29f9e6e2-20d9-11e9-b1be-42010a8e013b
+spec:
+  clusterIP: 10.7.252.26
+  externalTrafficPolicy: Cluster
+  loadBalancerIP: 35.231.78.17
+  ports:
+  - nodePort: 32207
+    port: 8080
+    protocol: TCP
+    targetPort: 8080
+  selector:
+    app: mongodb-enterprise-ops-manager
+  sessionAffinity: None
+  type: LoadBalancer
+status:
+  loadBalancer:
+    ingress:
+    - ip: 35.231.78.17
