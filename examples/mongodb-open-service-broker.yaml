@@ -48,6 +48,18 @@ spec:
     app: mongodb-open-service-broker 
   type: LoadBalancer
 ---
+apiVersion: servicecatalog.k8s.io/v1beta1
+kind: ClusterServiceBroker
+metadata:
+  name: mongodb-broker
+spec:
+  authInfo:
+    basic:
+      secretRef:
+        name: mongodb-open-service-broker-credentials
+        namespace: mongodb
+  url: http://mongodb-open-service-broker.mongodb.svc.cluster.local:5000 
+---
 apiVersion: apps/v1beta1
 kind: Deployment
 metadata:

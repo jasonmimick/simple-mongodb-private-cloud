@@ -75,7 +75,7 @@ class OSBMDBService(object, metaclass=abc.ABCMeta):
       #  self.logger.info("No parameters detected in template.")
       #  rendered_template = template['template']
       rendered_templates[template_name]['rendered_template'] = rendered_template
-      self.logger.debug('rendered_template:%s' % template)
+      self.logger.info('rendered_template:%s' % rendered_template)
     return rendered_templates
 
 

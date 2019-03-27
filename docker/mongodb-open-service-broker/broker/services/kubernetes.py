@@ -89,5 +89,6 @@ class KubernetesService(OSBMDBService):
         KubeHelper.delete_from_yaml( outputs[output]['rendered_template'], True) 
     finally:
       # clean up
-      del self.my_services[instance_id]
-      return DeprovisionServiceSpec(is_async=True)
+      deprovision_spec=DeprovisionServiceSpec(is_async=True)
+      #del self.my_services[instance_id]
+      return deprovision_spec

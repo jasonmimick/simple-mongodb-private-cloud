@@ -106,10 +106,11 @@ class MongoDBOpenServiceBroker(ServiceBroker):
     def provision(self, instance_id: str, service_details: ProvisionDetails,
                   async_allowed: bool) -> ProvisionedServiceSpec:
         logger.info("provision") 
-        self.provisioned_services[instance_id]={ "provider" : provider, "plan_id" : service_details.plan_id, "spec" : spec, "last_op" : LastOperation("provision","Started") }
-          
         provider_name = self.service_plans[service_details.plan_id]['provider_name']
         provider = self.service_providers[provider_name]
+        logger.info("provider_name=%s, provider=%s" % ( provider_name, provider) )
+        self.provisioned_services[instance_id]={ "provider" : provider,
+"plan_id" : service_details.plan_id, "spec" : None, "last_op" : LastOperation("provision","Started") } 
         logger.info("request to provision plan_id=%s" % service_details.plan_id)
         spec = provider.provision(instance_id, service_details, async_allowed)
         self.provisioned_services[instance_id]={ "provider" : provider, "plan_id" : service_details.plan_id, "spec" : spec, "last_op" : LastOperation("provision",spec) }
@@ -133,7 +134,7 @@ class MongoDBOpenServiceBroker(ServiceBroker):
         provider = self.provisioned_services[instance_id]["provider"]
         result = provider.deprovision(instance_id, details, async_allowed)
         self.provisioned_services[instance_id]["spec"] = result
-        self.provisioned_services[instance_id]["last_op"]="provision"
+        self.provisioned_services[instance_id]["last_op"]="deprovision"
         return result
 
     def check_plan_id(self, plan_id: str) -> bool:
